@@ -7,6 +7,7 @@
 #include <fstream>
 #include <istream>
 #include <algorithm>
+#include <random>
 
 #define MEM_SIZE 4096
 #define COUNT_REG 16
@@ -47,6 +48,7 @@ class chip8 {
         bool loadFile(std::string&& filepath);
         void run();
 
+        void tableOc0();
         void oc00E0();
         void oc00EE();
         void oc1NNN();
@@ -55,6 +57,25 @@ class chip8 {
         void oc4XKK();
         void oc5XY0();
         void oc6XKK();
+        void oc7XKK();
+
+        void tableOc8();
+        void oc8XY0();
+        void oc8XY1();
+        void oc8XY2();
+        void oc8XY3();
+        void oc8XY4();
+        void oc8XY5();
+        void oc8XY6();
+        void oc8XY7();
+        void oc8XYE();
+
+        void oc9XY0();
+        void ocANNN();
+        void ocBNNN();
+        void ocCXKK();
+        void ocDXYN();
+        
 };
 
 #endif
