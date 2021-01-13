@@ -118,3 +118,53 @@ void chip8::ocDXYN() {
     //     }
     // }
 }
+
+void chip8::ocEX9E() {
+    if(keyboard[getX(opcode)]) pc+=2;
+}
+
+void chip8::ocEXA1(){
+    if(!keyboard[getX(opcode)]) pc+=2;
+}
+
+void chip8::ocFX07(){
+    registers[getX(opcode)] = delayTimer;
+}
+
+void chip8::ocFX0A(){
+    if(!waitingKey) waitingKey = true;
+    for(int i = 0; i < 0xF; i++){
+        if(keyboard[i]) {
+            registers[getX(opcode)] = i;
+            waitingKey = false;
+        }
+    }
+}
+
+void chip8::ocFX15(){
+    delayTimer = registers[getX(opcode)];
+}
+
+void chip8::ocFX18(){
+    soundTimer = registers[getX(opcode)];
+}
+
+void chip8::ocFX1E(){
+    I += registers[getX(opcode)];
+}
+
+void chip8::ocFX29(){
+
+}
+
+void chip8::ocFX33(){
+
+}
+
+void chip8::ocFX55(){
+    memcpy(registers, &mem[I], sizeof(registers) * COUNT_REG);
+}
+
+void chip8::ocFX65(){
+    memcpy(&mem[I], registers, sizeof(registers) * COUNT_REG);
+}

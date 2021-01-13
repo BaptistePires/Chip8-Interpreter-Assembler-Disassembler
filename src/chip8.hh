@@ -39,7 +39,7 @@ class chip8 {
     uint8_t display[DISPLAY_SIZE];
 
     uint16_t opcode;
-    
+    bool waitingKey;
     bool debug = true;
     public:
         chip8();
@@ -75,6 +75,21 @@ class chip8 {
         void ocBNNN();
         void ocCXKK();
         void ocDXYN();
+
+        void tableOcE();
+        void ocEX9E();
+        void ocEXA1();
+
+        void tableOcF();
+        void ocFX07();
+        void ocFX0A();
+        void ocFX15();
+        void ocFX18();
+        void ocFX1E();
+        void ocFX29();
+        void ocFX33();
+        void ocFX55();
+        void ocFX65();
         
 };
 
