@@ -8,7 +8,7 @@ CXXFLAGS = -std=c++1y -Wall
 LDFLAGS = 
 
 # Makefile settings - Can be customized.
-APPNAME = chip8
+APPNAME = chip8Interpreter
 EXT = .cc
 SRCDIR = src
 OBJDIR = obj
