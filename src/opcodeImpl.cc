@@ -171,17 +171,32 @@ void chip8::ocCXKK() {
 }
 
 void chip8::ocDXYN() {
-    // uint16_t n = getN(opcode);
-    // uint8_t x = getX(opcode);
-    // uint8_t y = getY(opcode);
-    // uint16_t start = I;
-    // uint8_t curByte;
-    // TODO, hardest part but should be able to do it
-    // for(uint16_t height = 0; height < y; ++height) {
-    //     for(uint16_t width = 0; width < x; ++width) {
-    //         curByte = mem[height]
-    //     }
-    // }
+    uint16_t n = getN(opcode); // [0, 15]
+    const uint8_t x = getX(opcode); // [0, 63]
+    const uint8_t y = getY(opcode); // [0, 31]
+    
+    registers[0xF] = 0;
+    const uint8_t xPos = x % DISPLAY_WIDTH;
+    const uint8_t yPos = y % DISPLAY_HEIGHT;
+    uint8_t spriteByte;
+    uint8_t spritePixel, *screenPixel;
+    // lines 
+    for(uint8_t row = 0; row < n ; ++row) {
+        
+        spriteByte = mem[I + row];
+        // cols
+        for(uint8_t col = 0; col < 8; ++col) {
+            spritePixel = spriteByte & (80 >> col);
+            screenPixel = &display[(yPos + row) * DISPLAY_WIDTH + (xPos+ col)];
+
+            if(spritePixel) {
+                if(*screenPixel) registers[0xF] = 1;
+                *screenPixel ^=spritePixel;
+            }
+        }
+    }
+    needRender = true;
+    
 }
 
 void chip8::ocEX9E() {

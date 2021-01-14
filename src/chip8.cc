@@ -18,6 +18,7 @@ chip8::chip8() {
 
 chip8::~chip8(){
     delete[] mem;
+    endwin();
 }
 
 bool chip8::loadFile(std::string&& filepath) {
@@ -61,9 +62,48 @@ bool chip8::loadFile(std::string&& filepath) {
 
 
 void chip8::run() {
-    opcode = mem[pc++] << 8;
-    opcode |= mem[pc++];
-    (this->*opcodeTable[getCode(opcode)])();
+    if(!init()){
+        std::cout << "Error while initiating chip8, leaving..." << std::endl;
+    }
+    refresh();
+    render();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    while(running) {
+        if(waitingKey) continue;
+        opcode = mem[pc++] << 8;
+        opcode |= mem[pc++];
+        (this->*opcodeTable[getCode(opcode)])();    
+        if(needRender)render();
+    }
+    
 }
 
+bool chip8::init() {
+    if(initscr() == NULL) {
+        std::cout << "Error : can't init ncurses :(" << std::endl;
+        return false;
+    }
+    start_color();
+    init_pair(W_BG_PAIR, COLOR_BLACK, COLOR_WHITE);
+    init_pair(B_BG_PAIR, COLOR_WHITE, COLOR_BLACK);
+    raw();
+    noecho();
+    running = true;
+    return true;
+}
+
+void chip8::render() {
+    move(0, 0);
+    for(int y = 0; y < DISPLAY_HEIGHT; ++y) {
+        for(int  x = 0; x < DISPLAY_WIDTH; ++x) {
+            if(display[y * DISPLAY_HEIGHT + x]) attron(COLOR_PAIR(B_BG_PAIR));
+            else attron(COLOR_PAIR(W_BG_PAIR));
+            move(y , x);
+            addch('0');
+        }
+    }
+
+    refresh();
+    needRender = false;
+}
 

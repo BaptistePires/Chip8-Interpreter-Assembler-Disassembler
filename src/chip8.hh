@@ -9,7 +9,13 @@
 #include <algorithm>
 #include <random>
 #include <thread>
+#include <mutex>
+#include <atomic>
+#include <chrono>
+#include <ncurses.h>
 
+#define W_BG_PAIR 1
+#define B_BG_PAIR 2
 
 #define MEM_SIZE 4096
 #define COUNT_REG 16
@@ -29,6 +35,7 @@
 
 
 
+
 class chip8 {
     uint8_t registers[COUNT_REG];
     uint8_t soundTimer;
@@ -40,12 +47,17 @@ class chip8 {
     uint8_t *mem;
     uint16_t stack[STACK_SIZE];
     bool keyboard[0xF];
+    // Probably will use a bitset next don't know yet if it's worth, it's a small array anyway
     uint8_t display[DISPLAY_SIZE];
 
     uint16_t opcode;
     bool waitingKey;
-    bool debug = true;
+    bool debug = true;  
+    std::atomic<bool> running, needRender;
 
+
+
+    // Functions tables
     void (chip8::*opcodeTable[0xF + 1])();
     void (chip8::*ocTable0[0xE + 1])();
     void (chip8::*ocTable8[0xE + 1])();
@@ -60,6 +72,8 @@ class chip8 {
         void run();
         
     private:
+        bool init();
+        void render();
         void initFunctionsTable();
 
         void tableOc0();

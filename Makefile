@@ -5,7 +5,7 @@
 # Compiler settings - Can be customized.
 CC = g++
 CXXFLAGS = -std=c++1y -Wall
-LDFLAGS = 
+LDFLAGS = -lncurses
 
 # Makefile settings - Can be customized.
 APPNAME = chip8Interpreter
