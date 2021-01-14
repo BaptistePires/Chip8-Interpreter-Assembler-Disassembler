@@ -1,5 +1,70 @@
 #include "chip8.hh"
 
+
+void chip8::initFunctionsTable() {
+    opcodeTable[0] = &chip8::tableOc0;
+    ocTable0[0] = &chip8::oc00E0;
+    ocTable0[0xE] = &chip8::oc00EE;
+
+    opcodeTable[1] = &chip8::oc1NNN;
+    opcodeTable[2] = &chip8::oc2NNN;
+    opcodeTable[3] = &chip8::oc3XKK;
+    opcodeTable[4] = &chip8::oc4XKK;
+    opcodeTable[5] = &chip8::oc5XY0;
+    opcodeTable[6] = &chip8::oc6XKK;
+    opcodeTable[7] = &chip8::oc7XKK;
+
+    opcodeTable[8] = &chip8::tableOc8;
+    ocTable8[0] = &chip8::oc8XY0;
+    ocTable8[1] = &chip8::oc8XY1;
+    ocTable8[2] = &chip8::oc8XY2;
+    ocTable8[3] = &chip8::oc8XY3;
+    ocTable8[4] = &chip8::oc8XY4;
+    ocTable8[5] = &chip8::oc8XY5;
+    ocTable8[6] = &chip8::oc8XY6;
+    ocTable8[7] = &chip8::oc8XY7;
+    ocTable8[0xE] = &chip8::oc8XY7;
+
+    opcodeTable[9] = &chip8::oc9XY0;
+    opcodeTable[0xA] = &chip8::ocANNN;
+    opcodeTable[0xB] = &chip8::ocBNNN;
+    opcodeTable[0xC] = &chip8::ocCXKK;
+    opcodeTable[0xD] = &chip8::ocDXYN;
+
+    opcodeTable[0xF] = &chip8::tableOcE;
+    ocTableE[1] = &chip8::ocEXA1;
+    ocTableE[0xE] = &chip8::ocEX9E;
+
+    opcodeTable[0xF] = &chip8::tableOcF;
+    ocTableF[0x7] = &chip8::ocFX07;
+    ocTableF[0xA] = &chip8::ocFX07;
+    ocTableF[0x15] = &chip8::ocFX07;
+    ocTableF[0x18] = &chip8::ocFX07;
+    ocTableF[0x1E] = &chip8::ocFX07;
+    ocTableF[0x29] = &chip8::ocFX07;
+    ocTableF[0x33] = &chip8::ocFX07;
+    ocTableF[0x55] = &chip8::ocFX07;
+    ocTableF[0x65] = &chip8::ocFX07;
+
+}
+
+void chip8::tableOc0() {
+    (this->*ocTable0[getN(opcode)])();
+}
+
+void chip8::tableOc8() {
+    (this->*ocTable8[getN(opcode)])();
+}
+
+void chip8::tableOcE() {
+    (this->*ocTableE[getN(opcode)])();
+}
+
+void chip8::tableOcF() {
+    (this->*ocTableF[getKK(opcode)])();
+}
+
+
 void chip8::oc00E0(){
     memset(display, 0, DISPLAY_SIZE * sizeof(display));
 }
@@ -106,11 +171,11 @@ void chip8::ocCXKK() {
 }
 
 void chip8::ocDXYN() {
-    uint16_t n = getN(opcode);
-    uint8_t x = getX(opcode);
-    uint8_t y = getY(opcode);
-    uint16_t start = I;
-    uint8_t curByte;
+    // uint16_t n = getN(opcode);
+    // uint8_t x = getX(opcode);
+    // uint8_t y = getY(opcode);
+    // uint16_t start = I;
+    // uint8_t curByte;
     // TODO, hardest part but should be able to do it
     // for(uint16_t height = 0; height < y; ++height) {
     //     for(uint16_t width = 0; width < x; ++width) {

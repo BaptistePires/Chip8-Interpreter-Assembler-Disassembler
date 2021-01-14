@@ -11,6 +11,9 @@ chip8::chip8() {
     mem = new uint8_t[MEM_SIZE];
     pc = MEM_START;
     sp = 0;
+    // Load fonts
+    memcpy(mem, chip8_fontset, FONT_COUNT);
+    initFunctionsTable();
 }
 
 chip8::~chip8(){
@@ -19,7 +22,7 @@ chip8::~chip8(){
 
 bool chip8::loadFile(std::string&& filepath) {
     std::ifstream f(filepath, std::ios::binary | std::ios::ate);
-
+    
     if(!f.is_open()) {
         std::cout << "Error while loading file " << filepath << "." << std::endl;
         return false;
@@ -45,7 +48,8 @@ bool chip8::loadFile(std::string&& filepath) {
     f.close();
 
     memcpy(&mem[MEM_START], buf, fSize);
-    // Used for debug
+
+    // Used to debug
     if(debug)
         for(size_t i = 0; i < fSize; ++i) {
             std::cout << std::hex << (int) mem[MEM_START + i] << " ";
@@ -57,7 +61,9 @@ bool chip8::loadFile(std::string&& filepath) {
 
 
 void chip8::run() {
-
+    opcode = mem[pc++] << 8;
+    opcode |= mem[pc++];
+    (this->*opcodeTable[getCode(opcode)])();
 }
 
 

@@ -8,6 +8,8 @@
 #include <istream>
 #include <algorithm>
 #include <random>
+#include <thread>
+
 
 #define MEM_SIZE 4096
 #define COUNT_REG 16
@@ -16,12 +18,14 @@
 #define DISPLAY_HEIGHT 32
 #define DISPLAY_SIZE DISPLAY_WIDTH * DISPLAY_HEIGHT
 #define MEM_START 0x200
+#define FONT_COUNT 80
 
 #define getNNN(opcode) (opcode & 0x0FFF)
 #define getKK(opcode) (opcode & 0x00FF)
-#define getX(opcode) (opcode & 0x0F00)
-#define getY(opcode) (opcode & 0x00F0)
+#define getX(opcode) ((opcode & 0x0F00) >> 8)
+#define getY(opcode) ((opcode & 0x00F0) >> 4)
 #define getN(opcode) (opcode & 0x000F)
+#define getCode(opcode) ((opcode & 0xF000) >> 12)
 
 
 
@@ -41,16 +45,27 @@ class chip8 {
     uint16_t opcode;
     bool waitingKey;
     bool debug = true;
+
+    void (chip8::*opcodeTable[0xF + 1])();
+    void (chip8::*ocTable0[0xE + 1])();
+    void (chip8::*ocTable8[0xE + 1])();
+    void (chip8::*ocTableE[0xE + 1])();
+    void (chip8::*ocTableF[0x65 + 1])();
+
     public:
         chip8();
         ~chip8(); 
 
         bool loadFile(std::string&& filepath);
         void run();
+        
+    private:
+        void initFunctionsTable();
 
         void tableOc0();
         void oc00E0();
         void oc00EE();
+
         void oc1NNN();
         void oc2NNN();
         void oc3XKK();
@@ -90,6 +105,27 @@ class chip8 {
         void ocFX33();
         void ocFX55();
         void ocFX65();
+
+    private:
+        // Took it from http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+        uint8_t chip8_fontset[FONT_COUNT] = { 
+        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+        0x20, 0x60, 0x20, 0x20, 0x70, // 1
+        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+        };
         
 };
 
