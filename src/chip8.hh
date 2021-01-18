@@ -12,6 +12,9 @@
 #include <mutex>
 #include <atomic>
 #include <chrono>
+#include <bitset>
+#include <cstdlib>
+#include <sstream>
 #include <ncurses.h>
 
 #define W_BG_PAIR 1
@@ -24,14 +27,16 @@
 #define DISPLAY_HEIGHT 32
 #define DISPLAY_SIZE DISPLAY_WIDTH * DISPLAY_HEIGHT
 #define MEM_START 0x200
+#define PC_START 0x100
 #define FONT_COUNT 80
+#define FONT_START_ADDR 0x50
 
 #define getNNN(opcode) (opcode & 0x0FFF)
 #define getKK(opcode) (opcode & 0x00FF)
-#define getX(opcode) ((opcode & 0x0F00) >> 8)
-#define getY(opcode) ((opcode & 0x00F0) >> 4)
+#define getX(opcode) ((opcode & 0x0F00) >> 8u)
+#define getY(opcode) ((opcode & 0x00F0) >> 4u)
 #define getN(opcode) (opcode & 0x000F)
-#define getCode(opcode) ((opcode & 0xF000) >> 12)
+#define getCode(opcode) ((opcode & 0xF000) >> 12u)
 
 
 
@@ -46,16 +51,22 @@ class chip8 {
 
     uint8_t *mem;
     uint16_t stack[STACK_SIZE];
-    bool keyboard[0xF];
+    bool keyboard[0xFF];
     // Probably will use a bitset next don't know yet if it's worth, it's a small array anyway
     uint8_t display[DISPLAY_SIZE];
-
+    std::bitset<4096> *screen;
+    
     uint16_t opcode;
-    bool waitingKey;
     bool debug = true;  
     std::atomic<bool> running, needRender;
+    std::mutex memMtx;
+    std::mutex keyboardMtx;
 
-
+    // Used to disass
+    bool disassF;
+    size_t fSize;
+    std::ofstream disassFile;
+    
 
     // Functions tables
     void (chip8::*opcodeTable[0xF + 1])();
@@ -70,7 +81,7 @@ class chip8 {
 
         bool loadFile(std::string&& filepath);
         void run();
-        
+        void disass();
     private:
         bool init();
         void render();

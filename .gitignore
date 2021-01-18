@@ -1,0 +1,7 @@
+.vscode/
+obj/
+*.d
+*.asm
+*.log
+chip8Interpreter
+
