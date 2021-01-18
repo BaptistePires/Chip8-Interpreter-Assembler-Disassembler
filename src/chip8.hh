@@ -15,6 +15,7 @@
 #include <bitset>
 #include <cstdlib>
 #include <sstream>
+#include <atomic>
 #include <ncurses.h>
 
 #define W_BG_PAIR 1
@@ -27,9 +28,11 @@
 #define DISPLAY_HEIGHT 32
 #define DISPLAY_SIZE DISPLAY_WIDTH * DISPLAY_HEIGHT
 #define MEM_START 0x200
-#define PC_START 0x100
+#define PC_START 0x200
 #define FONT_COUNT 80
 #define FONT_START_ADDR 0x50
+
+#define INST_PER_SEC 400
 
 #define getNNN(opcode) (opcode & 0x0FFF)
 #define getKK(opcode) (opcode & 0x00FF)
@@ -51,16 +54,18 @@ class chip8 {
 
     uint8_t *mem;
     uint16_t stack[STACK_SIZE];
-    bool keyboard[0xFF];
-    // Probably will use a bitset next don't know yet if it's worth, it's a small array anyway
+    std::atomic<bool> keyboard[0xF];
+    // Probably will use a bitset next don't know yet if it's worth, it's a """small""" array anyway
     uint8_t display[DISPLAY_SIZE];
-    std::bitset<4096> *screen;
     
+    double clockSpeed;
+
     uint16_t opcode;
     bool debug = true;  
     std::atomic<bool> running, needRender;
+
     std::mutex memMtx;
-    std::mutex keyboardMtx;
+    
 
     // Used to disass
     bool disassF;
@@ -82,6 +87,8 @@ class chip8 {
         bool loadFile(std::string&& filepath);
         void run();
         void disass();
+        void setClock(double clock);
+
     private:
         bool init();
         void render();

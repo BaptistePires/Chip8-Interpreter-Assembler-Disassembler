@@ -307,7 +307,6 @@ void chip8::ocEXA1(){
     }
     uint8_t x = getX(opcode);
     uint8_t key = registers[x];
-    std::cout << "key : " << key << std::endl;
     if(!keyboard[key]) pc+=2;
 }
 
@@ -362,7 +361,7 @@ void chip8::ocFX29(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD    F, V" << std::hex << getX(opcode);
         return;
     }
-    I = FONT_START_ADDR + (registers[getX(opcode)] * 5);
+    I = (registers[getX(opcode)] * 5);
 }
 
 void chip8::ocFX33(){
@@ -380,7 +379,9 @@ void chip8::ocFX55(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD  [I], V" << std::hex << getX(opcode);
         return;
     }
-    memcpy(registers, &mem[I], COUNT_REG);
+    for(int i = 0; i <= getX(opcode); ++i ) {
+        mem[I + i] = registers[i];
+    }
 }
 
 void chip8::ocFX65(){
@@ -388,5 +389,7 @@ void chip8::ocFX65(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   V" << std::hex << getX(opcode) << ", [I]";
         return;
     }
-    memcpy(&mem[I], registers, COUNT_REG);
+    for(int i = 0; i <= getX(opcode); ++i ) {
+        registers[i] = mem[I + i];
+    }
 }

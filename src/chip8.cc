@@ -14,7 +14,6 @@ chip8::chip8() {
     disassF = false;
     // Load fonts
     for(int i = 0; i < FONT_COUNT; ++i) mem[FONT_START_ADDR + i] = chip8_fontset[i];
-    screen = new std::bitset<4096>();
     initFunctionsTable();
 
 
@@ -22,7 +21,6 @@ chip8::chip8() {
 
 chip8::~chip8(){
     delete[] mem;
-    delete screen;
     
     endwin();
 }
@@ -57,11 +55,11 @@ bool chip8::loadFile(std::string&& filepath) {
     memcpy(&mem[MEM_START], buf, fSize);
 
     // Used to debug
-    if(debug)
+    /*if(debug)
         for(size_t i = 0; i < fSize; ++i) {
             std::cout << std::hex << (int) mem[MEM_START + i] << " ";
             if((i+1)%10 == 0) std::cout << std::endl;
-        }
+        }*/
     return true;
 
 } 
@@ -79,38 +77,89 @@ void chip8::run() {
     std::thread inputT([&]() {
         while(running) {
             int ch;
-            switch ((ch = getch()))
-            {
+            uint8_t kId;
+            switch ((ch = getch())) {
             // ESC
             case 27:
                 running = false;
+                continue;
                 break;
             // a
-            case 97:
-
-                keyboard[0] = true;
+            case 'a':
+                kId = 0x0;
                 break;
-            default:
-                
-                refresh();
+            
+            case 'z':
+                kId = 0x1;
+                break;
+            
+            case 'e':
+                kId = 0x2;
+                break;
+
+            case 'q':
+                kId = 0x3;
+                break;
+            case 's':
+                kId = 0x4;
+                break;
+            case 'd':
+                kId = 0x5;
+                break;
+            case '<':
+                kId = 0x6;
+                break;
+            case 'w':
+                kId = 0x7;
+                break;
+            case 'x':
+                kId = 0x8;
+                break;
+            case 'c':
+                kId = 0x9;
+                break;
+            case 'r':
+                kId = 0xA;
+                break;
+            case 'f':
+                kId = 0xB;
+                break;
+            case 'v':
+                kId = 0xC;
+                break;
+            case 't':
+                kId = 0xD;
+                break;
+            case 'g':
+                kId = 0xE;
+                break;
+            case 'b':
+                kId = 0xF;
                 break;
             }
+
+            // Simulate key press, I don't think we can retrieve a key released event with ncurses :(. This is the best way I found to emulate that.
+            keyboard[kId] = true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            keyboard[kId] = false;
             
         }
     });
-    std::ofstream log("logs.log", std::ios::binary);
+
+    std::ofstream log("logs.log");
+    typedef std::chrono::time_point<std::chrono::high_resolution_clock> timer_t;
+    
+    timer_t lastInstTime = std::chrono::high_resolution_clock::now();
+    timer_t now;
+    log << clockSpeed << std::endl;
+    double microSecPerInst = 1e6 / clockSpeed;
     while(running) {
-        
+        now = std::chrono::high_resolution_clock::now();
+        if(std::chrono::duration_cast<std::chrono::microseconds>(now - lastInstTime).count() < microSecPerInst) continue;
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
-        log << std::hex << opcode << std::endl;
-        // mvprintw(0,0, "0x%04X", opcode);
-        
-        // std::cout << std::hex<< (int) opcode << std::endl;
         (this->*opcodeTable[getCode(opcode)])();    
         render();
-        
-        // refresh();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        lastInstTime = std::chrono::high_resolution_clock::now();
     }
     inputT.join();
     
@@ -142,25 +191,6 @@ bool chip8::init() {
 
 void chip8::render() {
     
-        // attron(COLOR_PAIR(B_BG_PAIR));
-        // bkgdset(' ');
-        // attroff(COLOR_PAIR(B_BG_PAIR));
-        // for(int y = 0; y < DISPLAY_HEIGHT; ++y) {
-        //     for(int  x = 0; x < DISPLAY_WIDTH; ++x) {
-            
-        //     if(display[y * DISPLAY_WIDTH + x] != 0){
-        //         attron(COLOR_PAIR(W_BG_PAIR));
-        //         mvaddch(y, x,' ');
-        //         attroff(COLOR_PAIR(W_BG_PAIR));
-
-        //     }else{continue;
-        //         attron(COLOR_PAIR(B_BG_PAIR));
-        //         mvaddch(y, x,' ');
-        //         attroff(COLOR_PAIR(B_BG_PAIR));
-
-        //     }
-        // }      
-        // }   
         for(int y = 0; y < DISPLAY_HEIGHT; ++y) {
             for(int x = 0; x < DISPLAY_WIDTH; ++x) {
                 if(display[y * DISPLAY_WIDTH + x]) {
@@ -186,11 +216,13 @@ void chip8::disass() {
         return;
     }
     disassF = true;
-    // +2 because opcodes are 16bits.
 
-    for(pc; pc < (PC_START + fSize); pc+=2) {
+    uint8_t code;
+    for(pc = PC_START; pc < (PC_START + fSize); pc+=2) {
+        
         opcode = (mem[pc] << 8u) | mem[pc + 1];
-        (this->*opcodeTable[getCode(opcode)])();
+        code = getCode(opcode);
+        (this->*opcodeTable[code])();
         disassFile << std::endl;
     }
 
@@ -198,62 +230,6 @@ void chip8::disass() {
     disassFile.close();
 }
 
-
-// void chip8::disassFile(const std::string& path) {
-//     std::ifstream f(path, std::ios::binary | std::ios::ate);
-    
-//     if(!f.is_open()) {
-//         std::cout << "Error while loading file " << path << "." << std::endl;
-//         return;
-//     }
-
-//     size_t fSize = f.tellg();
-//     if(fSize > 0xFFF - 0x600) {
-//         std::cout << "File too big sorry " << std::endl;
-//         f.close();
-//         return;
-//     }
-
-//     f.seekg(0);
-//     char *buf = new char[fSize];
-//     f.read(buf, fSize);
-//     if(!f.good()) {
-//         delete[] buf;
-//         std::cout << "Error while reading file's content" << std::endl;
-//         f.close();
-//         return;
-//     }
-//     f.close();
-
-//     std::ofstream disass("./disass.asm",  std::ios::binary);
-//     if(!disass.is_open()) {
-//         std::cout << "Error while loading file :" << path << std::endl;
-//         return;
-//     }
-//     uint16_t opcode;
-//     std::stringstream ss;
-//     for(size_t i = 0; i < fSize; i+=2) {
-//         opcode = buf[i] << 8;
-//         opcode |= buf[i+1];
-//         ss.str("");
-//         ss.clear();
-//         ss << "$" << std::hex << (0xFFF & i) << " " << std::dec;
-//         switch(getCode(opcode)) {
-//             case 0x0:
-//                 if(getY(opcode) == 0xE) {
-//                     ss << "CLS";
-//                 }else{
-//                     ss << "SYS " << std::hex << getNNN(opcode);
-//                 }
-//                 break;
-//             default:
-//                 ss << "Unknow opcode : " << std::hex << "$" << opcode;
-
-//         }
-        
-//         disass << ss.str() << std::endl;
-//     }
-
-//     disass.close();
-// }
-
+void chip8::setClock(double clock) {
+    clockSpeed = clock;
+}
