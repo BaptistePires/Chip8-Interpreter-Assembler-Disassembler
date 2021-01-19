@@ -3,12 +3,12 @@ This is a personal project. Made it to learn about emulators & CPUs.
 
 
 ## Dependencies
-You'll need `ncurses` to run this program. You can install it with :  
-`sudo apt-get install libncurses5-dev libncursesw5-dev`
+You'll need `SDL2` to run this program. You can install it with :  
+`sudo apt-get install libsdl2-dev`
 
 
 ## How to use it
-First you'll need to compile it. You'll need `make` and `ncurses`.  
+First you'll need to compile it. You'll need `make` and `SDL2`.  
   
 Currently, you can :  
 - Run a chip8 program, they're located in `./res`. You can also provide your own if you want to. To run a program use :    
@@ -22,7 +22,6 @@ Result will be stored in `disass.asm`. File created can't be compiled, I just us
 
 ## TODO
 ---
-- Update README.md with SDL2 instead of ncurese.
 - Sound
 - Improve disass with labels ?
 - Compiler
