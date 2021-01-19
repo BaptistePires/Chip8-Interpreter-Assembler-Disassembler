@@ -3,5 +3,7 @@ obj/
 *.d
 *.asm
 *.log
+*.o
+c8compiler
 chip8Interpreter
 
