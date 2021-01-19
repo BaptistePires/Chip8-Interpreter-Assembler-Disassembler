@@ -28,6 +28,12 @@ chip8::chip8() {
 }
 
 chip8::~chip8(){
+
+        
+    SDL_DestroyTexture(rendererWrapper.texture);
+    SDL_DestroyRenderer(rendererWrapper.r);
+    SDL_DestroyWindow(rendererWrapper.w);
+    SDL_Quit();
     delete[] mem;
     delete[] display;
 
@@ -85,22 +91,7 @@ void chip8::run() {
     log << clockSpeed << std::endl;
     double microSecPerInst = 1e6 / clockSpeed;
     
-    // Test SDL Rendering
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-        std::cout << "Error while SDL_Init() :" << SDL_GetError() << std::endl;
-        return;
-    }
-
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    if (SDL_CreateWindowAndRenderer(DISPLAY_WIDTH * 10, DISPLAY_HEIGHT * 10  , SDL_WINDOW_RESIZABLE |SDL_WINDOW_SHOWN, &window, &renderer) < 0) {
-        std::cout << "Error while creating window and renderer : " << SDL_GetError() << std::endl;
-    }
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, DISPLAY_WIDTH , DISPLAY_HEIGHT );
-    if(texture < 0) {
-        std::cout << "Error while creating texture" << std::endl;
-        return;
-    }
+    
     SDL_Event e;
 
     timer_t lastInstTime = std::chrono::high_resolution_clock::now();
@@ -231,29 +222,38 @@ void chip8::run() {
         if(std::chrono::duration_cast<std::chrono::microseconds>(now - lastInstTime).count() < microSecPerInst)continue;
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
         (this->*opcodeTable[getCode(opcode)])(); 
-        // std::cout << "opcode : " << std::hex << "0x" << opcode << std::endl;   
-        // for(int i = 0; i< 16;++i)
-        //     if(keyboard[i]) std::cout << std::hex << i << " pressed" << std::endl;
-        // render();
 
-        SDL_UpdateTexture(texture, nullptr, &display[0], sizeof(display[0]) * DISPLAY_WIDTH);
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
+        SDL_UpdateTexture(rendererWrapper.texture, nullptr, &display[0], sizeof(display[0]) * DISPLAY_WIDTH);
+        SDL_RenderClear(rendererWrapper.r);
+        SDL_RenderCopy(rendererWrapper.r, rendererWrapper.texture, nullptr, nullptr);
+        SDL_RenderPresent(rendererWrapper.r);
 
         if(delayTimer>0) delayTimer--;
         if(soundTimer>0) soundTimer--;
         lastInstTime = std::chrono::high_resolution_clock::now();
     }
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
+
     
     
 }
 
 bool chip8::init() {
+// Test SDL Rendering
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        std::cout << "Error while SDL_Init() :" << SDL_GetError() << std::endl;
+        return false;
+    }
 
+
+    if (SDL_CreateWindowAndRenderer(DISPLAY_WIDTH * 10, DISPLAY_HEIGHT * 10  , SDL_WINDOW_RESIZABLE |SDL_WINDOW_SHOWN, &rendererWrapper.w, &(rendererWrapper.r)) < 0) {
+        std::cout << "Error while creating window and renderer : " << SDL_GetError() << std::endl;
+    }
+
+    rendererWrapper.texture = SDL_CreateTexture(rendererWrapper.r, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, DISPLAY_WIDTH , DISPLAY_HEIGHT );
+    if(rendererWrapper.texture < 0) {
+        std::cout << "Error while creating texture" << std::endl;
+        return false;
+    }
     running = true;
     return true;
 }

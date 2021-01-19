@@ -43,6 +43,13 @@
 #define getCode(opcode) ((opcode & 0xF000) >> 12u)
 
 
+struct rendererWrapper {
+    SDL_Window *w;
+    SDL_Renderer *r;
+    SDL_Texture* texture;
+};
+
+typedef rendererWrapper rendererWrapper_t;
 
 
 class chip8 {
@@ -58,6 +65,7 @@ class chip8 {
     std::atomic<bool> keyboard[0xF];
     // Probably will use a bitset next don't know yet if it's worth, it's a """small""" array anyway
     uint32_t *display;
+    rendererWrapper_t rendererWrapper;
     
     double clockSpeed;
 
