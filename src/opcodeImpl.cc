@@ -181,7 +181,7 @@ void chip8::oc8XY4(){
     uint8_t x = registers[getX(opcode)], y = registers[getY(opcode)];
     if((x + y) > 255) registers[0xF] = 1;
     else registers[0xF] = 0;
-    registers[getX(opcode)] = ((x+y) & 0xFF);
+    registers[getX(opcode)] = ((x+y) & 0xFFu);
 }
 
 void chip8::oc8XY5(){
@@ -195,13 +195,14 @@ void chip8::oc8XY5(){
     registers[getX(opcode)] -= registers[getY(opcode)];
 }
 
+// according to : https://github.com/mattmikolay/chip-8/issues/4
 void chip8::oc8XY6() {
     if(disassF) {
         disassFile << "$" << std::hex << (pc & 0xFFF) << " SHR V" << std::hex << getX(opcode) << ", V" << getY(opcode);
         return;
     }
-    registers[0xF] = registers[getX(opcode)] & 0x1;
-    registers[getX(opcode)] >>= 1;;
+    registers[0xF] = (registers[getY(opcode)] & 0x1);
+    registers[getX(opcode)] = registers[getY(opcode)] >> 1;
 }
 
 void chip8::oc8XY7() {
@@ -221,8 +222,9 @@ void chip8::oc8XYE() {
         return;
     }
     uint8_t x = getX(opcode);
-    registers[x] = (registers[x] & 0x80u) >> 7u;
-    registers[x] <<= 1; // *2
+    registers[0xF] = (registers[x] & 0x80u) >> 7u;
+    registers[x] = registers[getY(opcode)] << 1; 
+
 }
 
 void chip8::oc9XY0() {
@@ -313,9 +315,8 @@ void chip8::ocEXA1(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " SKNP V" << std::hex << getX(opcode);
         return;
     }
-    uint8_t x = getX(opcode);
-    uint8_t key = registers[x];
-    if(!keyboard[key]) pc+=2;
+
+    if(!keyboard[registers[getX(opcode)]]) pc+=2;
 }
 
 void chip8::ocFX07(){
@@ -378,19 +379,20 @@ void chip8::ocFX33(){
         return;
     }
     	// Ones-place
-    uint8_t *v = &registers[getX(opcode)];
-	mem[I + 2] =(*v) % 10;
-	*v /= 10;
+    // uint8_t v = registers[getX(opcode)];
+	// mem[I + 2] = v % 10;
+	// v /= 10;
 
-	// Tens-place
-	mem[I + 1] = (*v) % 10;
-	*v /= 10;
+	// // Tens-place
+	// mem[I + 1] = v % 10;
+	// v /= 10;
 
-	// Hundreds-place
-	mem[I] = *v % 10;
-    // mem[I]     = registers[(opcode & 0x0F00) >> 8] / 100;
-    // mem[I + 1] = (registers[(opcode & 0x0F00) >> 8] / 10) % 10;
-    // mem[I + 2] = (registers[(opcode & 0x0F00) >> 8] % 100) % 10;	
+	// // Hundreds-place
+	// mem[I] = v % 10;
+    uint8_t v = registers[getX(opcode)];
+    mem[I]     = v/ 100;
+    mem[I + 1] = (v / 10) % 10;
+    mem[I + 2] = (v % 100) % 10;	
 }
 
 void chip8::ocFX55(){
@@ -398,9 +400,10 @@ void chip8::ocFX55(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD  [I], V" << std::hex << getX(opcode);
         return;
     }
-    for(int i = 0; i <= getX(opcode); ++i ) {
+    for(int i = 0; i < getX(opcode) + 1; ++i ) {
         mem[I + i] = registers[i];
     }
+    
 }
 
 void chip8::ocFX65(){

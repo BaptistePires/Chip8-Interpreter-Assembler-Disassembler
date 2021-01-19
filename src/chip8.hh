@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <atomic>
+#include <cmath>
 #include <SDL2/SDL.h>
 
 
@@ -49,7 +50,14 @@ struct rendererWrapper {
     SDL_Texture* texture;
 };
 
+struct audioWrapper {
+    SDL_AudioSpec spec;
+    SDL_AudioDeviceID device;
+    int sampleNo;
+};
+
 typedef rendererWrapper rendererWrapper_t;
+typedef audioWrapper audioWrapper_t;
 
 
 class chip8 {
@@ -66,6 +74,7 @@ class chip8 {
     // Probably will use a bitset next don't know yet if it's worth, it's a """small""" array anyway
     uint32_t *display;
     rendererWrapper_t rendererWrapper;
+    audioWrapper_t audio;
     
     double clockSpeed;
 
@@ -102,6 +111,7 @@ class chip8 {
         bool init();
         void render();
         void initFunctionsTable();
+        void handleEvents();
 
         void tableOc0();
         void oc00E0();

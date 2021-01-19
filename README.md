@@ -32,4 +32,4 @@ Here are listed all of the websites/emulators I used during development.
 2. https://code.austinmorlan.com/austin/chip8-emulator - Mainly for graphics & used it to check my opcodes implementations.
 3. https://github.com/mwales/chip8 - Took some ROMs from this repo.
 4. http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/ - Took font array from here.
-5.  https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html - Most of the ROMs were taken here.
+5. https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html - Most of the ROMs were taken here.
