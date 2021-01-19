@@ -30,7 +30,7 @@ chip8::chip8() {
 chip8::~chip8(){
     delete[] mem;
     delete[] display;
-    endwin();
+
 }
 
 bool chip8::loadFile(std::string&& filepath) {

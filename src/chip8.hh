@@ -17,7 +17,7 @@
 #include <sstream>
 #include <atomic>
 #include <SDL2/SDL.h>
-#include <ncurses.h>
+
 
 #define W_BG_PAIR 1
 #define B_BG_PAIR 2
