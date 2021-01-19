@@ -21,8 +21,16 @@ Result will be stored in `disass.asm`. File created can't be compiled, I just us
 
 
 ## TODO
+---
+- Update README.md with SDL2 instead of ncurese.
 - Sound
-- Improve rendering, some ROM seems broken :)
 - Improve disass with labels ?
 - Compiler
-- Keyboard
+## References
+---
+Here are listed all of the websites/emulators I used during development.  
+1. http://devernay.free.fr/hacks/chip8/C8TECH10.HTM - For everything available on it.
+2. https://code.austinmorlan.com/austin/chip8-emulator - Mainly for graphics & used it to check my opcodes implementations.
+3. https://github.com/mwales/chip8 - Took some ROMs from this repo.
+4. http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/ - Took font array from here.
+5.  https://www.zophar.net/pdroms/chip8/chip-8-games-pack.html - Most of the ROMs were taken here.

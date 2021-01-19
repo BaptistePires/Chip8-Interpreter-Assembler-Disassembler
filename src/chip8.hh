@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <atomic>
+#include <SDL2/SDL.h>
 #include <ncurses.h>
 
 #define W_BG_PAIR 1
@@ -32,7 +33,7 @@
 #define FONT_COUNT 80
 #define FONT_START_ADDR 0x50
 
-#define INST_PER_SEC 400
+#define INST_PER_SEC 100
 
 #define getNNN(opcode) (opcode & 0x0FFF)
 #define getKK(opcode) (opcode & 0x00FF)
@@ -56,7 +57,7 @@ class chip8 {
     uint16_t stack[STACK_SIZE];
     std::atomic<bool> keyboard[0xF];
     // Probably will use a bitset next don't know yet if it's worth, it's a """small""" array anyway
-    uint8_t display[DISPLAY_SIZE];
+    uint32_t *display;
     
     double clockSpeed;
 

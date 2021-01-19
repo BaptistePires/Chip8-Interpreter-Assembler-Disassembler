@@ -71,7 +71,7 @@ void chip8::oc00E0(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " CLS";
         return;
     }
-    memset(display, 0, sizeof(display));
+    memset(display, 0, sizeof(display[0]) * DISPLAY_SIZE);
 }
 
 void chip8::oc00EE(){
@@ -95,6 +95,7 @@ void chip8::oc2NNN(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " CALL $" << std::hex << getNNN(opcode); 
         return;
     }
+    
     stack[sp++] = pc;
     pc = getNNN(opcode);
 }
@@ -237,6 +238,7 @@ void chip8::ocANNN() {
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   I" << std::hex << ", $" << getNNN(opcode); 
         return;
     }
+
     I = getNNN(opcode);
 }
 
@@ -263,33 +265,39 @@ void chip8::ocDXYN() {
         disassFile << "$" << std::hex << (pc & 0xFFF) << " DRW  V" << std::hex << getX(opcode) << ", V" << getY(opcode) << ", $" << getN(opcode); 
         return;
     }
-    uint16_t n = getN(opcode); // [0, 15]
-    const uint8_t x = getX(opcode); // [0, 63]
-    const uint8_t y = getY(opcode); // [0, 31]
-    
-    registers[0xF] = 0;
-    const uint8_t xPos = registers[x] % DISPLAY_WIDTH;
-    const uint8_t yPos = registers[y] % DISPLAY_HEIGHT;
-    uint8_t spriteByte;
-    uint8_t spritePixel, *screenPixel;
-    // lines 
-    for(uint8_t row = 0; row < n ; ++row) {
-        
-        spriteByte = mem[I + row];
-        
-        // cols
-        for(uint8_t col = 0; col < 8; ++col) {
-            spritePixel = spriteByte & (0x80 >> col);
-            screenPixel = &display[(col + yPos) * DISPLAY_WIDTH + (row + xPos)];
-            
-            // This pixel of the sprite is ON (!=0)
-            if(spritePixel) {
-                // If screen pixel if also ON, need to set VF
-                if(*screenPixel == 0xFF) registers[0xF] = 1;
-                *screenPixel ^= 0xFF;
-            }
-        }
-    }    
+	uint8_t Vx = getX(opcode);
+	uint8_t Vy = getY(opcode);
+	uint8_t height = getN(opcode);
+
+	// Wrap if going beyond screen boundaries
+	uint8_t xPos = registers[Vx] % DISPLAY_WIDTH;
+	uint8_t yPos = registers[Vy] % DISPLAY_HEIGHT;
+
+	registers[0xF] = 0;
+
+	for (unsigned int row = 0; row < height; ++row)
+	{
+		uint8_t spriteByte = mem[I + row];
+
+		for (unsigned int col = 0; col < 8; ++col)
+		{
+			uint8_t spritePixel = spriteByte & (0x80u >> col);
+			uint32_t* screenPixel = &display[(yPos + row) * DISPLAY_WIDTH + (xPos + col)];
+
+			// Sprite pixel is on
+			if (spritePixel)
+			{
+				// Screen pixel also on - collision
+				if (*screenPixel == 0xFFFFFFFF)
+				{
+					registers[0xF] = 1;
+				}
+
+				// Effectively XOR with the sprite pixel
+				*screenPixel ^= 0xFFFFFFFF;
+			}
+		}
+	}
 }
 
 void chip8::ocEX9E() {
@@ -361,7 +369,7 @@ void chip8::ocFX29(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD    F, V" << std::hex << getX(opcode);
         return;
     }
-    I = (registers[getX(opcode)] * 5);
+    I = FONT_START_ADDR + (registers[getX(opcode)] * 5);
 }
 
 void chip8::ocFX33(){
@@ -369,9 +377,20 @@ void chip8::ocFX33(){
         disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   B, V" << std::hex << getX(opcode);
         return;
     }
-    mem[I]     = registers[(opcode & 0x0F00) >> 8] / 100;
-    mem[I + 1] = (registers[(opcode & 0x0F00) >> 8] / 10) % 10;
-    mem[I + 2] = (registers[(opcode & 0x0F00) >> 8] % 100) % 10;	
+    	// Ones-place
+    uint8_t *v = &registers[getX(opcode)];
+	mem[I + 2] =(*v) % 10;
+	*v /= 10;
+
+	// Tens-place
+	mem[I + 1] = (*v) % 10;
+	*v /= 10;
+
+	// Hundreds-place
+	mem[I] = *v % 10;
+    // mem[I]     = registers[(opcode & 0x0F00) >> 8] / 100;
+    // mem[I + 1] = (registers[(opcode & 0x0F00) >> 8] / 10) % 10;
+    // mem[I + 2] = (registers[(opcode & 0x0F00) >> 8] % 100) % 10;	
 }
 
 void chip8::ocFX55(){

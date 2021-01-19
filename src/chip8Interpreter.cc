@@ -35,8 +35,6 @@ int main(int argc, char** argv) {
 
     chip8 c;
     
-
-
     if(isOptSet(opts, DISASS_FLAG)) {
          std::pair<bool, int> opt = opts[DISASS_FLAG];
         if(!c.loadFile(argv[opt.second + 1])) return 0;
