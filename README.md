@@ -1,5 +1,5 @@
-# Chip8Interpreter
-This is a personnal projet.  
+# Chip8Interpreter & disassembler
+This is a personal project. Made it to learn about emulators & CPUs.  
 
 
 ## Dependencies
