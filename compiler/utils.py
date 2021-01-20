@@ -17,8 +17,8 @@ def spriteToHex(spriteLines: List[str]) -> List[int]:
     return ret
 
 def getLabelAddr(name: str, labels: dict) -> int:
-    for l in labelsWithInst:
-        if l == name: return labelsWithInst[l][0]
+    for l in labels:
+        if l == name: return labels[l][0]
     return -1
 
 def printBuffer(buffer):

@@ -80,7 +80,9 @@ for i in range(len(srcLines)):
             spriteLst = [srcLines[j].replace('"', '') for j in range(i + 1, i + 1 + height)]
             if sType == "s":
                 sprites[countSprites] += spriteToHex(spriteLst)
-            else :sprites[countSprites] += [int(x, 16) & 0xFF for x in spriteLst]
+            else:
+                sprites[countSprites] += [int(x.replace(hexDel, ' '), 16)&0xFF for x in spriteLst]
+            # else :sprites[countSprites] += [int(x, 16) & 0xFF for x in spriteLst]
             countSprites +=1
             skip = [True, height] 
     else:
