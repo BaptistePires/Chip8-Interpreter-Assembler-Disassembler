@@ -1,7 +1,9 @@
 from sys import argv
 from typing import List
 from utils import *
+from textwrap import dedent
 
+MEM_START = 0x200
 
 srcLines: str = []
 targetFile = "a.c8c"
@@ -25,7 +27,7 @@ try:
         for l in srcFile.readlines():
             # Strip \n
             buf = l
-            if(buf.replace(' ', '') != '\n'): srcLines.append(l[:-1])
+            if(buf.replace(' ', '') != '\n'): srcLines.append(l.replace('\n', ''))
 except IOError:
     print("Error while reading input file %s, can't open." % argv[1])
     exit()
@@ -82,16 +84,91 @@ for i in range(len(srcLines)):
             countSprites +=1
             skip = [True, height] 
     else:
-        if l.endswith(':'):
-            labels.append((l[:-1], i))
+        if l.startswith('_'):
+            labels.append((l, i))
         else:
-            print(l)
             instructions.append(l)    
 
 print("Sprites : ", sprites)
 print("Labels : ",  labels)              
 print("Inst :", instructions)
+totalSpriteBytes = sum([len(s) - 2 for s in sprites])
+
+# 
+romBuffer = []
+addr: int = MEM_START
+
+# write jump after sprites 
+# +2 for curr inst & need to go 'behind' sprites
+romBuffer.append((addr + totalSpriteBytes + 2) & 0xFF)
+romBuffer.append((((addr + totalSpriteBytes + 2) & 0xF00) >> 8)| 0x10)
+addr += 2
+# We store sprite directly at rom's start
+# Now the first sprite index will be his memory addr
+
+for i, s in enumerate(sprites):
+    sprites[i].insert(0, addr)
+    
+    for y in range(2, len(s)):
+        romBuffer.append(0xFF & s[y])
+        addr+=1
+
+print("Sprites : ", sprites)
+print([hex(x) for x in romBuffer])
+
+"""
+    Array containing:
+        - 0    : label's addr
+        - 1    : label's name
+        - 2..n : label's instructions
+"""
+labelsWithInst = {}
+labelCount: int = 0
+currLabel: str = ""
+# Not that good but we'll work with small files so it's ok i guess
+for i in range(len(srcLines)):
+    l = srcLines[i]
+    l = dedent(l)
+    if len(l) == 0: continue
+
+    if not l.startswith('_') :
+        if len(labelsWithInst) == 0:continue
+        else: 
+            labelsWithInst[currLabel].append(l)
+            addr += 2
+            
+    else:
+        currLabel = l
+        labelsWithInst[l] = [addr]
+        labelCount+=1
+
+print(labelsWithInst)
+# Now process instructions and store them :)
 
 
+byte1: int = 0x0
+byte2: int = 0x0
 
+for l in labelsWithInst:
+    for i in range(1, len(labelsWithInst[l])):
+        inst: str = labelsWithInst[l][i].lower()
+        
+        # SYS nnn
+        if(inst.startswith('sys')):
+            split = inst.split(' ')
+            byte1 = (int(split[1]) & 0xF00) >> 8
+            byte2 = (int(split[1]) & 0xFF)
+        elif(inst.startswith('ld')):
+            split = inst.split(' ')
+        else:
+            print("Unknow instruction : %s" % inst)
+            print("Leaving ...")
+            break
 
+        romBuffer.append(byte1 & 0xFF)
+        romBuffer.append(byte2 & 0xFF)
+        addr += 2
+
+        
+
+printBuffer(romBuffer)

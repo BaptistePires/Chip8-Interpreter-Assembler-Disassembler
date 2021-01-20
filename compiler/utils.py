@@ -16,3 +16,13 @@ def spriteToHex(spriteLines: List[str]) -> List[int]:
         ret.append(0xFF & tmp)
     return ret
 
+def getLabelAddr(name: str, labels: dict) -> int:
+    for l in labelsWithInst:
+        if l == name: return labelsWithInst[l][0]
+    return -1
+
+def printBuffer(buffer):
+    addr = 0x200
+    for i in range(len(buffer)):
+        print("$%s %s" % (hex(addr), hex(buffer[i])))
+        addr +=1

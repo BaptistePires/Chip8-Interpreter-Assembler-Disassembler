@@ -7,4 +7,4 @@ obj/
 c8compiler
 chip8Interpreter
 
-__pycache__/
+**/__pycache__/
