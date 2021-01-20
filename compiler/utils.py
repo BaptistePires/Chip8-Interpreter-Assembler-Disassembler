@@ -10,11 +10,9 @@ def spriteToHex(spriteLines: List[str]) -> List[int]:
     
     for l in spriteLines:
         tmp:int = 0
-        for i, char in enumerate(l):
-            tmp <<= 1
-            if char != ' ':
-                tmp |= 1 << i
-        
-        ret.append(bin(0xFF & tmp))
+        for i in range(8):
+            if l[i] != ' ':
+                tmp |=  (0x1 << i)
+        ret.append(0xFF & tmp)
     return ret
 
