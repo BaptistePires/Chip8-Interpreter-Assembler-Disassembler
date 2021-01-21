@@ -56,7 +56,7 @@ instructions = []
 
 skip = [False, 0]
 for i in range(len(srcLines)):
-    l = srcLines[i]
+    l = srcLines[i].lower()
     if skip[0] == True:
         skip[1] = skip[1] - 1
         if skip[1] == 0:
@@ -74,7 +74,7 @@ for i in range(len(srcLines)):
         ## Handle sprite
         if ".sprite" in l:
             label, name, height, sType = [w.replace(' ', '') for w in l.split(' ')]
-            
+
             height = int(''.join([char for char in height if char.isnumeric()]))
             sprites.append([name, height])
             spriteLst = [srcLines[j].replace('"', '') for j in range(i + 1, i + 1 + height)]
@@ -87,7 +87,12 @@ for i in range(len(srcLines)):
             skip = [True, height] 
     else:
         if l.startswith('_'):
-            labels.append((l, i))
+            label = l
+            if label.endswith(':'): label = label[:-1]
+            if len(label) <= 1:
+                printError(i, "You have to give a name to your label, not", srcLines[i])
+                exit()
+            labels.append((label, i))
         else:
             instructions.append(l)    
 
@@ -110,8 +115,7 @@ addr += 2
 
 for i, s in enumerate(sprites):
     sprites[i].insert(0, addr)
-    
-    for y in range(2, len(s)):
+    for y in range(3, len(s)):
         romBuffer.append(0xFF & s[y])
         addr+=1
 
@@ -154,21 +158,23 @@ byte2: int = 0x0
 for l in labelsWithInst:
     for i in range(1, len(labelsWithInst[l])):
         inst: str = labelsWithInst[l][i].lower()
-        
+        print("in:"+inst)
         # SYS nnn
-        if(inst.startswith('sys')):
+        if(inst.startswith("sys")):
             split = inst.split(' ')
             byte1 = (int(split[1]) & 0xF00) >> 8
             byte2 = (int(split[1]) & 0xFF)
-        elif(inst.startswith('ld')):
-            split = inst.split(' ')
+
+        # All LDs
+        elif(inst.startswith("ld")):
+            byte1, byte2 = parseInst_LD(inst, l, hexDel)
         else:
             print("Unknow instruction : %s" % inst)
             print("Leaving ...")
             break
 
-        romBuffer.append(byte1 & 0xFF)
         romBuffer.append(byte2 & 0xFF)
+        romBuffer.append(byte1 & 0xFF)
         addr += 2
 
         
