@@ -58,7 +58,6 @@ def getInstOps(instLine: str, label: str):
 """
 def getRegNo(op: str) -> int:
     tmp = 0
-    print(op)
     try:
         tmp = int(op[1:])
     except ValueError:
@@ -86,7 +85,6 @@ def getIntFromHexStr(hexS: str="", hexDel="$"):
             exit()
 
     hexS = hexS.replace(hexDel, '')
-    print(hexS)
     try:
        hexS = int(hexS, 16)
     except ValueError as e:

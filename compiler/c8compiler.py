@@ -83,7 +83,7 @@ for i in range(len(srcLines)):
             if sType == "s":
                 sprites[countSprites] += spriteToHex(spriteLst)
             else:
-                sprites[countSprites] += [int(x.replace(hexDel, ' '), 16)&0xFF for x in spriteLst]
+                sprites[countSprites] += [int(x.replace(hexDel, ''), 16)&0xFF for x in spriteLst]
             # else :sprites[countSprites] += [int(x, 16) & 0xFF for x in spriteLst]
             countSprites +=1
             skip = [True, height]
@@ -102,27 +102,34 @@ print("Sprites : ", sprites)
 print("Labels : ",  labels)              
 print("Inst :", instructions)
 totalSpriteBytes = sum([len(s) - 2 for s in sprites])
-
+print("Total sprites size : ", totalSpriteBytes)
 # 
 romBuffer:int = []
 addr: int = MEM_START
 
-# write jump after sprites 
-# +2 for curr inst & need to go 'behind' sprites
-romBuffer.append((addr + totalSpriteBytes + 2) & 0xFF)
-romBuffer.append((((addr + totalSpriteBytes + 2) & 0xF00) >> 8)| 0x10)
-addr += 2
-# We store sprite directly at rom's start
-# Now the first sprite index will be his memory addr
 
-for i, s in enumerate(sprites):
-    sprites[i].insert(0, addr)
-    for y in range(3, len(s)):
-        romBuffer.append(0xFF & s[y])
-        addr+=1
+if totalSpriteBytes > 0:
+    # We need to check if sprites bytes count is even to keep instuctions addr aligned
+    if totalSpriteBytes%2 != 0:
+        totalSpriteBytes += 1
 
-print("Sprites : ", sprites)
-print([hex(x) for x in romBuffer])
+    # write jump after sprites 
+    # +2 for curr inst & need to go 'behind' sprites
+    romBuffer.append((((addr + totalSpriteBytes + 2) & 0xF00) >> 8)& 0xF| 0x10)
+    romBuffer.append((addr + totalSpriteBytes + 2) & 0xFF)
+
+    addr += 2
+    # We store sprite directly at rom's start
+    # Now the first sprite index will be his memory addr
+
+    for i, s in enumerate(sprites):
+        sprites[i].insert(0, addr)
+        for y in range(3, len(s)):
+            romBuffer.append(0xFF & s[y])
+            addr+=1
+
+    print("Sprites : ", sprites)
+    print([hex(x) for x in romBuffer])
 
 """
     Array containing:
@@ -186,9 +193,7 @@ functionTableCreateBytes = {
 
 for l in labelsWithInst:
     for i in range(1, len(labelsWithInst[l])):
-        print(len(labelsWithInst[l]), i)
         inst: str = labelsWithInst[l][i].lower()
-        print("in: "+inst)  
         split = inst.split(' ')
 
         # Here we replace label's name with its addr
@@ -203,15 +208,14 @@ for l in labelsWithInst:
             print("Unknow instruction : %s" % inst)
             print("Leaving ...")
             break
-        romBuffer.append(byte2 & 0xFF)
+
         romBuffer.append(byte1 & 0xFF)
+        romBuffer.append(byte2 & 0xFF)
         addr += 2       
 
 printBuffer(romBuffer)
 
-with open(targetFile, 'wb') as outFile:
+with open(targetFile, 'w+b') as outFile:
     print("Writing content to %s..." % targetFile)
-    byte:int
     for byte in romBuffer:
-        outFile.write(byte.to_bytes(2, byteorder='big', signed=False))
-        # outFile.write(int(byte, 16).to_bytes(2, byteorder='big', signed=False))
+        outFile.write(byte.to_bytes(1, byteorder='little', signed=False))
