@@ -4,7 +4,6 @@ obj/
 *.asm
 *.log
 *.o
-c8compiler
 chip8Interpreter
 
-compiler/__pycache__/
+assembler/__pycache__/

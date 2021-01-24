@@ -18,11 +18,12 @@ chip8::chip8() {
     // memset(display, 0, sizeof(display[0]) * DISPLAY_SIZE);
     clockSpeed = INST_PER_SEC;
     
-    for(int i = 0; i < FONT_COUNT; ++i) mem[FONT_START_ADDR + i] = chip8_fontset[i];
+    for(int i = 0; i < FONT_COUNT; ++i){
+        mem[FONT_START_ADDR + i] = chip8_fontset[i];
+        mem[0x50 + i] = chip8_fontset[i];
+    }
+    
     initFunctionsTable();
-
-
-
 }
 
 chip8::~chip8(){

@@ -388,17 +388,6 @@ void chip8::ocFX33(){
         disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   B, V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
-    	// Ones-place
-    // uint8_t v = registers[getX(opcode)];
-	// mem[I + 2] = v % 10;
-	// v /= 10;
-
-	// // Tens-place
-	// mem[I + 1] = v % 10;
-	// v /= 10;
-
-	// // Hundreds-place
-	// mem[I] = v % 10;
     uint8_t v = registers[getX(opcode)];
     mem[I]     = v/ 100;
     mem[I + 1] = (v / 10) % 10;
