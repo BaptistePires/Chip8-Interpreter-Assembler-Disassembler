@@ -128,23 +128,24 @@ def parseInst_LD(instLine: str, label:str, hexDel: str) -> (int, int):
     d1, d2  = 0,0
     byte1: int = 0
     byte2: int = 0
+
     # Registers load
     # LD vx, vy 8xy0
     if op1.startswith('v') and op2.startswith('v'):
         d1 = getRegNo(op1)
         d2 = getRegNo(op2)
-        byte1 = 0x80 | d1
-        byte2 = ((d2 & 0xF) << 4) | 0x00
+        byte1 = 0x80 | (d1 & 0xF)
+        byte2 = ((d2 & 0xF) << 4)
     # LD vx, bb 6xbb
     elif op1.startswith('v'):
         d1 = getRegNo(op1)
         d2 = getIntFromHexStr(op2, hexDel=hexDel)
-        byte1 = 0x80 | (d1 & 0xF0)
+        byte1 = 0x60 | (d1 & 0xF)
         byte2 = 0xFF & d2
     # LD I, bbb
     elif op1 == "i":
         d1 = getIntFromHexStr(op2, hexDel)
-        byte1 = 0xA0 | (0xF00 & d1)
+        byte1 = 0xA0 | ((0xF00 & d1)>>8)
         byte2 = 0x0FF & d1
     
     # LD vx, dt Fx07

@@ -308,6 +308,7 @@ void chip8::ocDXYN() {
 			}
 		}
 	}
+    render();
 }
 
 void chip8::ocEX9E() {

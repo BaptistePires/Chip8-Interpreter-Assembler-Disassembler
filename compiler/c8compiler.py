@@ -53,19 +53,21 @@ countSprites: int = 0
 """
 labels = []
 
-# Test segment size in bytes.
+
 instructions = []
 
 skip = [False, 0]
 for i in range(len(srcLines)):
+
     l = srcLines[i].lower()
+
     if skip[0] == True:
         skip[1] = skip[1] - 1
         if skip[1] == 0:
             skip[0] = False
         continue
-    if(l == '\n'): continue
-
+    if l == '\n' : continue
+    if l.startswith(';'):continue
     if l[0] == '#':
         if "HEXDEL" in l:
             lineSplit = l.split(' ')
@@ -78,13 +80,13 @@ for i in range(len(srcLines)):
             label, name, height, sType = [w.replace(' ', '') for w in l.split(' ')]
 
             height = int(''.join([char for char in height if char.isnumeric()]))
+
             sprites.append([name, height])
             spriteLst = [srcLines[j].replace('"', '') for j in range(i + 1, i + 1 + height)]
             if sType == "s":
                 sprites[countSprites] += spriteToHex(spriteLst)
             else:
                 sprites[countSprites] += [int(x.replace(hexDel, ''), 16)&0xFF for x in spriteLst]
-            # else :sprites[countSprites] += [int(x, 16) & 0xFF for x in spriteLst]
             countSprites +=1
             skip = [True, height]
     else:
@@ -111,7 +113,7 @@ addr: int = MEM_START
 if totalSpriteBytes > 0:
     # We need to check if sprites bytes count is even to keep instuctions addr aligned
     if totalSpriteBytes%2 != 0:
-        totalSpriteBytes += 1
+        romBuffer.append(0x00)
 
     # write jump after sprites 
     # +2 for curr inst & need to go 'behind' sprites
@@ -167,9 +169,12 @@ byte1: int = 0x0
 byte2: int = 0x0
 
 
+"""
+    Function table used to handle
+"""
 functionTableCreateBytes = {
-    "cls": lambda _, __, ___: ((0x00 & 0xFF), (0x0E & 0xFF)),
-    "ret": lambda _, __, ___: ((0x00 & 0xFF), (0xEE & 0xFF)),
+    "cls": lambda _, __, ___: ((0x0E & 0xFF), (0x00 & 0xFF)),
+    "ret": lambda _, __, ___: ((0xEE & 0xFF), (0x00 & 0xFF)),
     "jp": parseInst_JP,
     "call": parseInst_CALL,
     "se": parseInst_SE,
@@ -200,7 +205,7 @@ for l in labelsWithInst:
         if "jp" in split[0] or "call" in split[0]:
             for tmpLabel in labelsWithInst:
                 if tmpLabel in inst:
-                    inst = inst.replace(tmpLabel, hexDel + str(labelsWithInst[tmpLabel][0]))
+                    inst = inst.replace(tmpLabel, hex(labelsWithInst[tmpLabel][0]).replace('0x', hexDel))
 
         if split[0] in functionTableCreateBytes:
             byte1, byte2 = functionTableCreateBytes[split[0]](inst, l, hexDel)

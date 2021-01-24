@@ -63,10 +63,7 @@ void chip8::run() {
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
         (this->*opcodeTable[getCode(opcode)])(); 
         instCount++;
-        SDL_UpdateTexture(rendererWrapper.texture, nullptr, &display[0], sizeof(display[0]) * DISPLAY_WIDTH);
-        SDL_RenderClear(rendererWrapper.r);
-        SDL_RenderCopy(rendererWrapper.r, rendererWrapper.texture, nullptr, nullptr);
-        SDL_RenderPresent(rendererWrapper.r);
+        
 
         if(delayTimer>0) delayTimer--;
 
@@ -129,7 +126,10 @@ bool chip8::init() {
 }
 
 void chip8::render() {
-    
+    SDL_UpdateTexture(rendererWrapper.texture, nullptr, &display[0], sizeof(display[0]) * DISPLAY_WIDTH);
+    SDL_RenderClear(rendererWrapper.r);
+    SDL_RenderCopy(rendererWrapper.r, rendererWrapper.texture, nullptr, nullptr);
+    SDL_RenderPresent(rendererWrapper.r);
 }
 
 void chip8::disass() {

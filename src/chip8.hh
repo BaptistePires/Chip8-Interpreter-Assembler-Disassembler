@@ -32,7 +32,7 @@
 #define MEM_START 0x200
 #define PC_START 0x200
 #define FONT_COUNT 80
-#define FONT_START_ADDR 0x50
+#define FONT_START_ADDR 0x00%0
 
 #define INST_PER_SEC 100
 
