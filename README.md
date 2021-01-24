@@ -4,10 +4,12 @@ This was only tested on Ubuntu, but it will most likely run on any Debian-based 
 
 ## Dependencies
 You'll need `SDL2` to run this program. You can install it with :  
-`sudo apt-get install libsdl2-dev`
+`sudo apt-get install libsdl2-dev`  
+You'll also need to create the folder `./obj` that will be used during compilation.
 
 
 ## How to use it
+___
 First you'll need to compile it. You'll need `make` and `SDL2`.  
   
 Currently, you can :  
@@ -18,7 +20,9 @@ Currently, you can :
 `./chip8Interpreter -d [path_to_file]`   
 Result will be stored in `disass.asm`. File created can't be compiled, I just use it to understand roms.
 
+# Assembler
 
+If you want to take a look at the assembler, go [here](./assembler), there are some examples.
 
 ## TODO
 ---
