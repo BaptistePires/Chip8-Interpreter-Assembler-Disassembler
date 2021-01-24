@@ -83,7 +83,7 @@ Inst. Format | opcode | Description|
 `CLS` | `00E0` | Clear display. |
 `RET` | `00EE` | Return from subroutine. |
 `JP label` | `1bbb` | Jump to label.
-`CALL label` | `2EEE` | `pc = addr of label`
+`CALL label` | `2bbb` | `pc = addr of label`
 `SE Vx, bb` | `3Xbb` | `registers[X] == N: pc+=2 `
 `SNE Vx, bb` | `4Xbb` | `registers[X] != N: pc+=2 `
 `SE Vx, Vy` | `5xy0` | `registers[X] == registers[Y]: pc+=2`
@@ -96,7 +96,7 @@ Inst. Format | opcode | Description|
 `ADD Vx, Vy` | `8xy4` | `registers[x] += registers[y]` and `registers[0xF] = carry ? 1 : 0`
 `SUB Vx, Vy` | `8xy5` | `registers[x] -= registers[y]` and `registers[0xF] = carry ? 0 : 1`
 `SHR Vx, Vy` | `8xy6` | `registers[0xF] = register[x] & 0x1 ; registers[x] >>= 1` 
-`SUBN Vx, Vy` | `8xy0` | `registers[y] -= registers[x]` and `registers[0xF] = carry ? 0 : 1`
+`SUBN Vx, Vy` | `8xy7` | `registers[y] -= registers[x]` and `registers[0xF] = carry ? 0 : 1`
 `SHL Vx, Vy` | `8xyE` | `registers[0xF] = register[x] & 0x80 ; registers[x] <<= 1` 
 `SNE Vx, Vy` | `9XY0` | `registers[X] != registers[Y]: pc+=2 `
 `LD I, bbb` | `Abbb` | `I = bbb`

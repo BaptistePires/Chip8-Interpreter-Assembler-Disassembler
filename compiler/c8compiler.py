@@ -10,6 +10,7 @@ srcLines: str = []
 targetFile = "a.c8c"
 lenArgv = len(argv)
 
+
 # Parse args
 if lenArgv < 2:
     print("Usage :\n\tpython3 %s filename [-o output]" % argv[0])
@@ -85,7 +86,7 @@ for i in range(len(srcLines)):
                 sprites[countSprites] += [int(x.replace(hexDel, ' '), 16)&0xFF for x in spriteLst]
             # else :sprites[countSprites] += [int(x, 16) & 0xFF for x in spriteLst]
             countSprites +=1
-            skip = [True, height] 
+            skip = [True, height]
     else:
         if l.startswith('_'):
             label = l
@@ -103,7 +104,7 @@ print("Inst :", instructions)
 totalSpriteBytes = sum([len(s) - 2 for s in sprites])
 
 # 
-romBuffer = []
+romBuffer:int = []
 addr: int = MEM_START
 
 # write jump after sprites 
@@ -145,6 +146,8 @@ for i in range(len(srcLines)):
             addr += 2
             
     else:
+        if l.endswith(':'):
+            l = l.replace(':', '')
         currLabel = l
         labelsWithInst[l] = [addr]
         labelCount+=1
@@ -156,46 +159,59 @@ print(labelsWithInst)
 byte1: int = 0x0
 byte2: int = 0x0
 
+
+functionTableCreateBytes = {
+    "cls": lambda _, __, ___: ((0x00 & 0xFF), (0x0E & 0xFF)),
+    "ret": lambda _, __, ___: ((0x00 & 0xFF), (0xEE & 0xFF)),
+    "jp": parseInst_JP,
+    "call": parseInst_CALL,
+    "se": parseInst_SE,
+    "sne": parseInst_SNE,
+    "add": parseInst_ADD,
+    "or": parseInst_OR,
+    "and": parseInst_AND,
+    "xor": parseInst_XOR,
+    "sub": parseInst_SUB,
+    "shr": parseInst_SHR,
+    "subn": parseInst_SUBN,
+    "shl": parseInst_SHL,
+    "jp0": parseInst_JP0,
+    "rnd": parseInst_RND,
+    "drw": parseInst_DRW,
+    "skp": parseInst_SKP,
+    "sknp": parseInst_SKNP,
+    "ld": parseInst_LD
+}
+
+
 for l in labelsWithInst:
     for i in range(1, len(labelsWithInst[l])):
+        print(len(labelsWithInst[l]), i)
         inst: str = labelsWithInst[l][i].lower()
-        print("in:"+inst)
-        # SYS nnn
-        if(inst.startswith("sys")):
-            split = inst.split(' ')
-            byte1 = ((int(split[1]) & 0xF00) >> 8 & 0xFF)
-            byte2 = (int(split[1]) & 0xFF)
+        print("in: "+inst)  
+        split = inst.split(' ')
 
-        # RET
-        elif inst.startswith("ret"):
-            byte1 = 0x00
-            byte2 = 0xFF
+        # Here we replace label's name with its addr
+        if "jp" in split[0] or "call" in split[0]:
+            for tmpLabel in labelsWithInst:
+                if tmpLabel in inst:
+                    inst = inst.replace(tmpLabel, hexDel + str(labelsWithInst[tmpLabel][0]))
 
-        # JP & JP0
-        elif inst.startswith("jp"):
-            split = inst.split(' ')
-            if split[0] == "jp0":pass
-            byte1 = (((int(split[1]) & 0xF00) >> 8) & 0xFF)
-            byte2 = (int(split[1]) & 0xFF)
-
-        # CALL
-        elif inst.startswith('call'):
-            split = inst.split(' ')
-            byte1 = (((int(split[1]) & 0xF00) >> 8) & 0xFF)
-            byte2 = (int(split[1]) & 0xFF)
-        # All LDs
-        elif(inst.startswith("ld")):
-            byte1, byte2 = parseInst_LD(inst, l, hexDel)
-        #
+        if split[0] in functionTableCreateBytes:
+            byte1, byte2 = functionTableCreateBytes[split[0]](inst, l, hexDel)
         else:
             print("Unknow instruction : %s" % inst)
             print("Leaving ...")
             break
-
         romBuffer.append(byte2 & 0xFF)
         romBuffer.append(byte1 & 0xFF)
-        addr += 2
-
-        
+        addr += 2       
 
 printBuffer(romBuffer)
+
+with open(targetFile, 'wb') as outFile:
+    print("Writing content to %s..." % targetFile)
+    byte:int
+    for byte in romBuffer:
+        outFile.write(byte.to_bytes(2, byteorder='big', signed=False))
+        # outFile.write(int(byte, 16).to_bytes(2, byteorder='big', signed=False))
