@@ -67,6 +67,7 @@ class chip8 {
     uint8_t sp;
     uint16_t I;
     uint16_t pc;
+    int fontStartAddr = FONT_START_ADDR;
 
     uint8_t *mem;
     uint16_t stack[STACK_SIZE];
@@ -81,8 +82,6 @@ class chip8 {
     uint16_t opcode;
     bool debug = true;  
     std::atomic<bool> running, needRender;
-
-    std::mutex memMtx;
     
 
     // Used to disass
@@ -108,6 +107,7 @@ class chip8 {
         void run();
         void disass();
         void setClock(double clock);
+        void setFontAddr(int fontAddr);
 
     private:
         bool init();

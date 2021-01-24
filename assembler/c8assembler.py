@@ -4,8 +4,10 @@ from typing import List
 
 from utils import *
 
-MEM_START = 0x200
+# Memory start in 
+memStartAddr = 0x200
 
+doDebug = '-d' in argv or '--debug' in argv
 srcLines: str = []
 targetFile = "a.c8c"
 lenArgv = len(argv)
@@ -27,6 +29,7 @@ elif lenArgv > 2:
 try:
     with open(argv[1], "r") as srcFile:
         for l in srcFile.readlines():
+            if ';' in l: continue
             # Strip \n
             buf = l
             if(buf.replace(' ', '') != '\n'): srcLines.append(l.replace('\n', ''))
@@ -56,24 +59,33 @@ labels = []
 
 instructions = []
 
+print("Parsing file...")
 skip = [False, 0]
 for i in range(len(srcLines)):
 
     l = srcLines[i].lower()
-
+    
     if skip[0] == True:
         skip[1] = skip[1] - 1
         if skip[1] == 0:
             skip[0] = False
         continue
     if l == '\n' : continue
-    if l.startswith(';'):continue
+    
+
     if l[0] == '#':
-        if "HEXDEL" in l:
+        if "hexdel" in l:
             lineSplit = l.split(' ')
             if lineSplit[1] in ['$', '0x']:
                 hexDel = lineSplit[1]
-
+        elif "memstart" in l:
+            lineSplit = l.split(' ')
+            
+            if hexDel in lineSplit[1]:
+                memStartAddr = int(lineSplit[1].replace(hexDel, '', 16))
+            else:
+                memStartAddr = int(lineSplit[1])
+                
     elif l[0] == '.':
         ## Handle sprite
         if ".sprite" in l:
@@ -100,15 +112,19 @@ for i in range(len(srcLines)):
         else:
             instructions.append(l)    
 
-print("Sprites : ", sprites)
-print("Labels : ",  labels)              
-print("Inst :", instructions)
 totalSpriteBytes = sum([len(s) - 2 for s in sprites])
-print("Total sprites size : ", totalSpriteBytes)
-# 
-romBuffer:int = []
-addr: int = MEM_START
 
+if doDebug:
+    print("Sprites : ", sprites)
+    print("Labels : ",  labels)              
+    print("Inst :", instructions)    
+    print("Total sprites size : ", totalSpriteBytes)
+
+
+romBuffer:int = []
+addr: int = memStartAddr
+print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (addr, hexDel))
+print("Reading user defined sprites...")
 
 if totalSpriteBytes > 0:
     # We need to check if sprites bytes count is even to keep instuctions addr aligned
@@ -130,8 +146,9 @@ if totalSpriteBytes > 0:
             romBuffer.append(0xFF & s[y])
             addr+=1
 
-    print("Sprites : ", sprites)
-    print([hex(x) for x in romBuffer])
+    if doDebug:
+        print("Sprites : ", sprites)
+        print([hex(x) for x in romBuffer])
 
 """
     Array containing:
@@ -161,7 +178,7 @@ for i in range(len(srcLines)):
         labelsWithInst[l] = [addr]
         labelCount+=1
 
-print(labelsWithInst)
+if doDebug: sprint(labelsWithInst)
 # Now process instructions and store them :)
 
 
@@ -170,7 +187,7 @@ byte2: int = 0x0
 
 
 """
-    Function table used to handle
+    Function table used to handle all instructions.
 """
 functionTableCreateBytes = {
     "cls": lambda _, __, ___: ((0x0E & 0xFF), (0x00 & 0xFF)),
@@ -209,18 +226,20 @@ for l in labelsWithInst:
 
         if split[0] in functionTableCreateBytes:
             byte1, byte2 = functionTableCreateBytes[split[0]](inst, l, hexDel)
+        
+        # Sould not happen
         else:
             print("Unknow instruction : %s" % inst)
             print("Leaving ...")
             break
-
+        
         romBuffer.append(byte1 & 0xFF)
         romBuffer.append(byte2 & 0xFF)
         addr += 2       
 
-printBuffer(romBuffer)
-
 with open(targetFile, 'w+b') as outFile:
-    print("Writing content to %s..." % targetFile)
+
     for byte in romBuffer:
         outFile.write(byte.to_bytes(1, byteorder='little', signed=False))
+
+print("Everything went well. You can find assembled file here : %s" % targetFile)

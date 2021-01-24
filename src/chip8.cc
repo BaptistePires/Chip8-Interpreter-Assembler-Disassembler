@@ -19,8 +19,7 @@ chip8::chip8() {
     clockSpeed = INST_PER_SEC;
     
     for(int i = 0; i < FONT_COUNT; ++i){
-        mem[FONT_START_ADDR + i] = chip8_fontset[i];
-        mem[0x50 + i] = chip8_fontset[i];
+        mem[fontStartAddr + i] = chip8_fontset[i];
     }
     
     initFunctionsTable();
@@ -127,8 +126,8 @@ bool chip8::init() {
 }
 
 void chip8::render() {
+    // SDL_RenderClear(rendererWrapper.r);
     SDL_UpdateTexture(rendererWrapper.texture, nullptr, &display[0], sizeof(display[0]) * DISPLAY_WIDTH);
-    SDL_RenderClear(rendererWrapper.r);
     SDL_RenderCopy(rendererWrapper.r, rendererWrapper.texture, nullptr, nullptr);
     SDL_RenderPresent(rendererWrapper.r);
 }
@@ -202,6 +201,13 @@ bool chip8::loadFile(std::string&& filepath) {
 
 void chip8::setClock(double clock) {
     clockSpeed = clock;
+}
+
+void chip8::setFontAddr(int fontAddr) {
+    fontStartAddr = fontAddr;
+    for(int i = 0; i < FONT_COUNT; ++i){
+        mem[fontStartAddr + i] = chip8_fontset[i];
+    }
 }
 
 void chip8::handleEvents() {

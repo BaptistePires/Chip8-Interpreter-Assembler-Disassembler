@@ -13,6 +13,7 @@
 
 const std::string DISASS_FLAG = "-d"; 
 const std::string CLOCK_FLAG = "-c";
+const std::string FONT_ADDR_FLAG = "--font";
 
 /**
  *  Type of options:
@@ -47,6 +48,12 @@ int main(int argc, char** argv) {
             
             if(clock > 0) c.setClock(clock);
         }   
+
+        if(isOptSet(opts, FONT_ADDR_FLAG)) {
+            std::pair<bool, int> opt = opts[CLOCK_FLAG];
+            int fontAddr = atoi(argv[opt.second + 1]);
+            if(fontAddr > 0 && fontAddr < 0xFFF) c.setFontAddr(fontAddr);
+        }
 
         if(!c.loadFile(argv[1])) return 0;
         c.run();

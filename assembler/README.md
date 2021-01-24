@@ -25,13 +25,14 @@ Here is how output file is structured.
 
 ## Rules
 ---  
-> Comments can only be used on one line, starting by `;`
+> Any line containing `;` will be considered as a comment.
  
 ### Preprocessor directives
 You can define several preprocessor directives to tell the parser how to read your file. Each preprocessor directive should be on its own line and start with `#`.   
 
 Preprocessor directives allowed :  
-    - `#HEXDEF $ [or] 0x` : this allow you to specify how hex numbers are written.
+- `#HEXDEF $ [or] 0x` : this allow you to specify how hex numbers are written (`0xFF or $FF`).  
+- `#MEMSTART [hex addr]`: This allows you to control where will point the jump inserted as the begening of the program. If you're using a basic `CHIP-8` interpreter it should be `0x200` (default) but on `SCHIP-8` it `0x600`.
 
 ### Assembly directives
 Here are the following directives that you can use.  
@@ -59,6 +60,28 @@ $FF
 $FF
 ```
 These will generate the same sprite.
+
+## Drawing user defined sprites
+To draw own of your sprites, you need to know at wich location you program will start.
+Here is how you can draw a 3 pixels height rectangle.
+```assembly
+#HEXDEF $
+#MEMSTART $200
+
+.sprite ns $3 s
+"........"
+"........"
+"........"
+
+
+_start:
+    ld v1, $0
+    ld v2, $0
+    ld I, $202
+    drw v1, v2, $3
+
+```
+As we specify `#MEMSTART $200`, there will be 1 `jp` instruction insterted at the begining so our `sprite segment` will starts at `$200 + 2 = 202`. Soon I hope I'll implement a way to use sprites names instead of addr, will be way easier lol :)
 
 ## Labels
 Labels allow you to create multiple parts in your code. 
