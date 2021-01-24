@@ -1,7 +1,8 @@
 from sys import argv
-from typing import List
-from utils import *
 from textwrap import dedent
+from typing import List
+
+from utils import *
 
 MEM_START = 0x200
 
@@ -162,12 +163,30 @@ for l in labelsWithInst:
         # SYS nnn
         if(inst.startswith("sys")):
             split = inst.split(' ')
-            byte1 = (int(split[1]) & 0xF00) >> 8
+            byte1 = ((int(split[1]) & 0xF00) >> 8 & 0xFF)
             byte2 = (int(split[1]) & 0xFF)
 
+        # RET
+        elif inst.startswith("ret"):
+            byte1 = 0x00
+            byte2 = 0xFF
+
+        # JP & JP0
+        elif inst.startswith("jp"):
+            split = inst.split(' ')
+            if split[0] == "jp0":pass
+            byte1 = (((int(split[1]) & 0xF00) >> 8) & 0xFF)
+            byte2 = (int(split[1]) & 0xFF)
+
+        # CALL
+        elif inst.startswith('call'):
+            split = inst.split(' ')
+            byte1 = (((int(split[1]) & 0xF00) >> 8) & 0xFF)
+            byte2 = (int(split[1]) & 0xFF)
         # All LDs
         elif(inst.startswith("ld")):
             byte1, byte2 = parseInst_LD(inst, l, hexDel)
+        #
         else:
             print("Unknow instruction : %s" % inst)
             print("Leaving ...")

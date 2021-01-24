@@ -49,26 +49,34 @@ void chip8::initFunctionsTable() {
 }
 
 void chip8::tableOc0() {
-    
-    (this->*ocTable0[getN(opcode)])();
+    uint8_t n = getN(opcode);
+    if(n == 0 || n == 0xE)
+        (this->*ocTable0[n])();
 }
 
 void chip8::tableOc8() {
-    (this->*ocTable8[getN(opcode)])();
+    uint8_t n = getN(opcode);
+    if((n >= 0 && n <= 7) || n == 0xE)
+        (this->*ocTable8[n])();
 }
 
 void chip8::tableOcE() {
-    (this->*ocTableE[getN(opcode)])();
+    uint8_t n = getN(opcode);
+    if(n == 0xE || n == 0x1)
+        (this->*ocTableE[n])();
 }
 
 void chip8::tableOcF() {
-    (this->*ocTableF[getKK(opcode)])();
+    uint8_t kk = getKK(opcode);
+    for(const uint8_t& fCode: opcodesF)
+        if(fCode == kk)
+            (this->*ocTableF[kk])();
 }
 
 
 void chip8::oc00E0(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " CLS";
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " CLS"<< std::endl;
         return;
     }
     memset(display, 0, sizeof(display[0]) * DISPLAY_SIZE);
@@ -76,7 +84,7 @@ void chip8::oc00E0(){
 
 void chip8::oc00EE(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " RET";
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " RET"<< std::endl;
         return;
     }
     pc = stack[--sp];
@@ -84,7 +92,7 @@ void chip8::oc00EE(){
 
 void chip8::oc1NNN(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " JP   $" << std::hex << getNNN(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " JP   $" << std::hex << getNNN(opcode)<< std::endl;
         return;
     }
     pc = getNNN(opcode);
@@ -92,7 +100,7 @@ void chip8::oc1NNN(){
 
 void chip8::oc2NNN(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " CALL $" << std::hex << getNNN(opcode); 
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " CALL $" << std::hex << getNNN(opcode)<< std::endl; 
         return;
     }
     
@@ -102,7 +110,7 @@ void chip8::oc2NNN(){
 
 void chip8::oc3XKK(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SE   V" << std::hex << getX(opcode) << ", $" << getKK(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SE   V" << std::hex << getX(opcode) << ", $" << getKK(opcode)<< std::endl;
         return;
     }
     if(registers[getX(opcode)] == getKK(opcode)) pc+=2;    
@@ -110,7 +118,7 @@ void chip8::oc3XKK(){
 
 void chip8::oc4XKK(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SNE  V" << std::hex << getX(opcode) << ", $" << getKK(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SNE  V" << std::hex << getX(opcode) << ", $" << getKK(opcode)<< std::endl;
         return;
     }
     if(registers[getX(opcode)] != getKK(opcode)) pc+=2;
@@ -118,7 +126,7 @@ void chip8::oc4XKK(){
 
 void chip8::oc5XY0(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SE   V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SE   V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     if(registers[getX(opcode)] == registers[getY(opcode)]) pc+=2;
@@ -126,7 +134,7 @@ void chip8::oc5XY0(){
 
 void chip8::oc6XKK(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   V" << std::hex << getX(opcode) << ", $" << getKK(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   V" << std::hex << getX(opcode) << ", $" << getKK(opcode)<< std::endl;
         return;
     }
     registers[getX(opcode)] = getKK(opcode);
@@ -134,7 +142,7 @@ void chip8::oc6XKK(){
 
 void chip8::oc7XKK(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " ADD  V" << std::hex << getX(opcode) << ", $" << getKK(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " ADD  V" << std::hex << getX(opcode) << ", $" << getKK(opcode)<< std::endl;
         return;
     }
     registers[getX(opcode)] += getKK(opcode);
@@ -143,7 +151,7 @@ void chip8::oc7XKK(){
 
 void chip8::oc8XY0(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     registers[getX(opcode)] = registers[getY(opcode)];
@@ -151,7 +159,7 @@ void chip8::oc8XY0(){
 
 void chip8::oc8XY1(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " OR  V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " OR  V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     registers[getX(opcode)] |= registers[getY(opcode)];
@@ -159,7 +167,7 @@ void chip8::oc8XY1(){
 
 void chip8::oc8XY2(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " AND V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " AND V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     registers[getX(opcode)] &= registers[getY(opcode)];
@@ -167,7 +175,7 @@ void chip8::oc8XY2(){
 
 void chip8::oc8XY3(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " XOR V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " XOR V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     registers[getX(opcode)] ^= registers[getY(opcode)];
@@ -175,7 +183,7 @@ void chip8::oc8XY3(){
 
 void chip8::oc8XY4(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " ADD V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " ADD V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     uint8_t x = registers[getX(opcode)], y = registers[getY(opcode)];
@@ -186,7 +194,7 @@ void chip8::oc8XY4(){
 
 void chip8::oc8XY5(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SUB V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SUB V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     uint8_t x = registers[getX(opcode)], y = registers[getY(opcode)];
@@ -198,7 +206,7 @@ void chip8::oc8XY5(){
 // according to : https://github.com/mattmikolay/chip-8/issues/4
 void chip8::oc8XY6() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SHR V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SHR V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     registers[0xF] = (registers[getY(opcode)] & 0x1);
@@ -207,7 +215,7 @@ void chip8::oc8XY6() {
 
 void chip8::oc8XY7() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SUBN V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SUBN V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     uint8_t x = registers[getX(opcode)], y = registers[getY(opcode)];
@@ -218,7 +226,7 @@ void chip8::oc8XY7() {
 
 void chip8::oc8XYE() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SHL V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SHL V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     uint8_t x = getX(opcode);
@@ -229,7 +237,7 @@ void chip8::oc8XYE() {
 
 void chip8::oc9XY0() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SNE V" << std::hex << getX(opcode) << ", V" << getY(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SNE V" << std::hex << getX(opcode) << ", V" << getY(opcode)<< std::endl;
         return;
     }
     if(registers[getX(opcode)] != registers[getY(opcode)]) pc +=2;
@@ -237,7 +245,7 @@ void chip8::oc9XY0() {
 
 void chip8::ocANNN() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   I" << std::hex << ", $" << getNNN(opcode); 
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   I" << std::hex << ", $" << getNNN(opcode)<< std::endl;; 
         return;
     }
 
@@ -246,7 +254,7 @@ void chip8::ocANNN() {
 
 void chip8::ocBNNN() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " JP  V0" << std::hex << ", $" << getNNN(opcode); 
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " JP  V0" << std::hex << ", $" << getNNN(opcode)<< std::endl;
         return;
     }
     pc = registers[0] + getNNN(opcode);
@@ -254,7 +262,7 @@ void chip8::ocBNNN() {
 
 void chip8::ocCXKK() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " RND  V" << std::hex << getX(opcode) << ", $" << getKK(opcode); 
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " RND  V" << std::hex << getX(opcode) << ", $" << getKK(opcode)<< std::endl; 
         return;
     }
     // TODO : Check this opcode, seems weird to do it this way
@@ -264,7 +272,7 @@ void chip8::ocCXKK() {
 
 void chip8::ocDXYN() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " DRW  V" << std::hex << getX(opcode) << ", V" << getY(opcode) << ", $" << getN(opcode); 
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " DRW  V" << std::hex << getX(opcode) << ", V" << getY(opcode) << ", $" << getN(opcode)<< std::endl; 
         return;
     }
 	uint8_t Vx = getX(opcode);
@@ -304,7 +312,7 @@ void chip8::ocDXYN() {
 
 void chip8::ocEX9E() {
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SKP  V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SKP  V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     if(keyboard[registers[getX(opcode)]]) pc+=2;
@@ -312,16 +320,17 @@ void chip8::ocEX9E() {
 
 void chip8::ocEXA1(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SKNP V" << std::hex << getX(opcode);
+        
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SKNP V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
-
+    // std::cout << std::hex << registers[getX(opcode)] std::endl;
     if(!keyboard[registers[getX(opcode)]]) pc+=2;
 }
 
 void chip8::ocFX07(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   V" << std::hex << getX(opcode) << ", DT";
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   V" << std::hex << getX(opcode) << ", DT"<< std::endl;
         return;
     }
     registers[getX(opcode)] = delayTimer;
@@ -329,7 +338,7 @@ void chip8::ocFX07(){
 
 void chip8::ocFX0A(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " SKP  V" << std::hex << getX(opcode) << ", K";
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " SKP  V" << std::hex << getX(opcode) << ", K"<< std::endl;
         return;
     }
     for(int i = 0; i < 0xF; i++){
@@ -343,7 +352,7 @@ void chip8::ocFX0A(){
 
 void chip8::ocFX15(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   DT, V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   DT, V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     delayTimer = registers[getX(opcode)];
@@ -351,7 +360,7 @@ void chip8::ocFX15(){
 
 void chip8::ocFX18(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   ST, V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   ST, V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     soundTimer = registers[getX(opcode)];
@@ -359,7 +368,7 @@ void chip8::ocFX18(){
 
 void chip8::ocFX1E(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " ADD  I, V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " ADD  I, V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     I += registers[getX(opcode)];
@@ -367,7 +376,7 @@ void chip8::ocFX1E(){
 
 void chip8::ocFX29(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD    F, V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD    F, V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     I = FONT_START_ADDR + (registers[getX(opcode)] * 5);
@@ -375,7 +384,7 @@ void chip8::ocFX29(){
 
 void chip8::ocFX33(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   B, V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   B, V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     	// Ones-place
@@ -397,7 +406,7 @@ void chip8::ocFX33(){
 
 void chip8::ocFX55(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD  [I], V" << std::hex << getX(opcode);
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD  [I], V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
     for(int i = 0; i < getX(opcode) + 1; ++i ) {
@@ -408,7 +417,7 @@ void chip8::ocFX55(){
 
 void chip8::ocFX65(){
     if(disassF) {
-        disassFile << "$" << std::hex << (pc & 0xFFF) << " LD   V" << std::hex << getX(opcode) << ", [I]";
+        disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD   V" << std::hex << getX(opcode) << ", [I]"<< std::endl;
         return;
     }
     for(int i = 0; i <= getX(opcode); ++i ) {

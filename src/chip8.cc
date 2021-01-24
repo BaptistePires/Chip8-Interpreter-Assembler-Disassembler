@@ -142,13 +142,16 @@ void chip8::disass() {
     disassF = true;
 
     uint8_t code;
-    for(pc = PC_START; pc < (PC_START + fSize); pc+=2) {
+
+    for(pc = PC_START; pc < MEM_SIZE; pc+=2) {
         
         opcode = (mem[pc] << 8u) | mem[pc + 1];
+        if(opcode == 0x0000) continue;
         std::cout << "opcode : " << std::hex << opcode << std::endl;
         code = getCode(opcode);
+
         (this->*opcodeTable[code])();
-        disassFile << std::endl;
+        
     }
 
 

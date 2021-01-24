@@ -98,6 +98,8 @@ class chip8 {
     void (chip8::*ocTableE[0xE + 1])();
     void (chip8::*ocTableF[0x65 + 1])();
 
+    std::vector<uint8_t> opcodesF = {0x07, 0x0A, 0x15, 0x18, 0x1E, 0x20, 0x33, 0x55, 0x65};
+
     public:
         chip8();
         ~chip8(); 
