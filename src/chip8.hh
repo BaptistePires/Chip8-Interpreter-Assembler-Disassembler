@@ -76,6 +76,7 @@ class chip8 {
     uint32_t *display;
     rendererWrapper_t rendererWrapper;
     audioWrapper_t audio;
+    std::string romPath;
     
     double clockSpeed;
 

@@ -128,8 +128,11 @@ print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (addr, hexDel))
 print("Reading user defined sprites...")
 
 if totalSpriteBytes > 0:
-
+    # Ignore jump before
+    addr +=2 
+    print(addr)
     for i, s in enumerate(sprites):
+
         sprites[i].insert(0, addr)
         for y in range(3, len(s)):
             romBuffer.append(0xFF & s[y])
@@ -225,10 +228,10 @@ functionTableCreateBytes = {
     "drw": parseInst_DRW,
     "skp": parseInst_SKP,
     "sknp": parseInst_SKNP,
-    "ld": parseInst_LD
+    "ld":  parseInst_LD
 }
 
-
+print(sprites)
 for l in labelsWithInst:
     for i in range(1, len(labelsWithInst[l])):
         inst: str = labelsWithInst[l][i].lower()
@@ -240,6 +243,16 @@ for l in labelsWithInst:
                 if tmpLabel in inst:
                     inst = inst.replace(tmpLabel, hex(labelsWithInst[tmpLabel][0]).replace('0x', hexDel))
 
+        # Here we replace sprites name by its addr
+        # Instruction has to be formated this way : ld I, sprite_name
+        if "ld i" in inst:
+            for s in sprites:
+                
+                if s[1] == split[2]:
+                    split[2] = str(s[0])
+                    inst = ' '.join(split)
+                    print("Inserted inst : ", inst)
+                    break
         if split[0] in functionTableCreateBytes:
             byte1, byte2 = functionTableCreateBytes[split[0]](inst, l, hexDel)
             print("bytes:: ", hex(byte1), hex(byte2))

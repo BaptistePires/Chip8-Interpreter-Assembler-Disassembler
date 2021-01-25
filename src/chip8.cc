@@ -96,6 +96,8 @@ bool chip8::init() {
     if (SDL_CreateWindowAndRenderer(DISPLAY_WIDTH * 10, DISPLAY_HEIGHT * 10  , SDL_WINDOW_RESIZABLE |SDL_WINDOW_SHOWN, &rendererWrapper.w, &(rendererWrapper.r)) < 0) {
         std::cout << "Error while creating window and renderer : " << SDL_GetError() << std::endl;
     }
+    std::string title = "Chip-8 Interpreter - " + romPath;
+    SDL_SetWindowTitle(rendererWrapper.w, title.c_str());
 
     rendererWrapper.texture = SDL_CreateTexture(rendererWrapper.r, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, DISPLAY_WIDTH , DISPLAY_HEIGHT );
     if(rendererWrapper.texture < 0) {
@@ -193,11 +195,13 @@ bool chip8::loadFile(std::string&& filepath) {
     memcpy(&mem[MEM_START], buf, fSize);
 
     // Used to debug
-    if(debug)
-        for(size_t i = 0; i < fSize; ++i) {
-            std::cout << std::hex << (int) mem[MEM_START + i] << " ";
-            if((i+1)%10 == 0) std::cout << std::endl;
-        }
+    // if(debug)
+    //     for(size_t i = 0; i < fSize; ++i) {
+    //         std::cout << std::hex << (int) mem[MEM_START + i] << " ";
+    //         if((i+1)%10 == 0) std::cout << std::endl;
+    //     }
+
+    romPath = std::move(filepath);
     return true;
 
 } 

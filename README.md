@@ -24,11 +24,15 @@ Result will be stored in `disass.asm`. File created can't be compiled, I just us
 
 If you want to take a look at the assembler, go [here](./assembler), there are some examples.
 
+# Screenshots
+![sprites](./res/doc/sprites.png)
+![invaders](./res/doc/invaders.png)
+
 ## TODO
 ---
-- Assembler : Allow `drw` with sprite names.
 - Fix some opcodes interpreter
 - Improve disass with labels ?
+- 
 
 ## References
 ---

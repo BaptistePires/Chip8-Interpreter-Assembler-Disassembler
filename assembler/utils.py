@@ -15,9 +15,13 @@ def spriteToHex(spriteLines: List[str]) -> List[int]:
     
     for l in spriteLines:
         tmp:int = 0
-        for i in range(8):
+        for i in range(7, -1, -1):
             if l[i] != ' ':
-                tmp |=  (0x1 << i)
+                tmp |=  (0x80 >> i)
+        # for i in range(8):
+        #     if l[i] != ' ':
+        #         tmp |=  (0x1 << i)
+        print(hex(tmp))
         ret.append(0xFF & tmp)
     return ret
 
