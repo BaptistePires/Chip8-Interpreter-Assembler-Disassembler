@@ -5,7 +5,8 @@ This was only tested on Ubuntu, but it will most likely run on any Debian-based 
 ## Dependencies
 You'll need `SDL2` to run this program. You can install it with :  
 `sudo apt-get install libsdl2-dev`  
-You'll also need to create the folder `./obj` that will be used during compilation.
+You'll also need to create the folder `./obj` that will be used during compilation.  
+Once you're all set, you can just run `make` in the root directory.
 
 
 ## How to use it
