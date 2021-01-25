@@ -527,8 +527,8 @@ def parseInst_DRW(instLine: str, label:str, hexDel: str) -> (int, int):
         d1 = getRegNo(op1)
         d2 = getRegNo(op2)
         d3 = getIntFromHexStr(op3)
-        if d3 <= 0 or d3 > 8:
-            printParseErr("Sprites must have a height between 1 and 8", label, instLine)
+        if d3 <= 0 or d3 > 0xF:
+            printParseErr("Sprites must have a height between 1 and 15", label, instLine)
         byte1 = (d1 & 0xF) | 0xD0
         byte2 = ((d2 & 0xF) << 4) | (d3 & 0xF)
     else:

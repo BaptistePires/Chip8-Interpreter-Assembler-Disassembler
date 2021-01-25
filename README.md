@@ -32,7 +32,7 @@ If you want to take a look at the assembler, go [here](./assembler), there are s
 ---
 - Fix some opcodes interpreter
 - Improve disass with labels ?
-- 
+- Some examples with jumps etc
 
 ## References
 ---
