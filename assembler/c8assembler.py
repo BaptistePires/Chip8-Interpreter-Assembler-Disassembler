@@ -82,7 +82,7 @@ for i in range(len(srcLines)):
             lineSplit = l.split(' ')
             
             if hexDel in lineSplit[1]:
-                memStartAddr = int(lineSplit[1].replace(hexDel, '', 16))
+                memStartAddr = int(lineSplit[1].replace(hexDel, ''), 16)
             else:
                 memStartAddr = int(lineSplit[1])
                 
@@ -109,6 +109,7 @@ for i in range(len(srcLines)):
                 printError(i, "You have to give a name to your label, not", srcLines[i])
                 exit()
             labels.append((label, i))
+            
         else:
             instructions.append(l)    
 
@@ -127,28 +128,43 @@ print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (addr, hexDel))
 print("Reading user defined sprites...")
 
 if totalSpriteBytes > 0:
-    # We need to check if sprites bytes count is even to keep instuctions addr aligned
-    if totalSpriteBytes%2 != 0:
-        romBuffer.append(0x00)
-
-    # write jump after sprites 
-    # +2 for curr inst & need to go 'behind' sprites
-    romBuffer.append((((addr + totalSpriteBytes + 2) & 0xF00) >> 8)& 0xF| 0x10)
-    romBuffer.append((addr + totalSpriteBytes + 2) & 0xFF)
-
-    addr += 2
-    # We store sprite directly at rom's start
-    # Now the first sprite index will be his memory addr
 
     for i, s in enumerate(sprites):
         sprites[i].insert(0, addr)
         for y in range(3, len(s)):
             romBuffer.append(0xFF & s[y])
             addr+=1
+    
+    addrJumpTarget = addr + 2
+    if doDebug: print("Jump target behind sprites : ", addrJumpTarget)
+    
+    romBuffer.insert(0, ((addrJumpTarget & 0xF00) >> 8) | 0x10)
+    romBuffer.insert(1, addrJumpTarget & 0x0FF)
+    addr += 2
 
-    if doDebug:
-        print("Sprites : ", sprites)
-        print([hex(x) for x in romBuffer])
+# if totalSpriteBytes > 0:
+#     # We need to check if sprites bytes count is even to keep instuctions addr aligned
+#     if totalSpriteBytes%2 != 0:
+#         romBuffer.append(0x00)
+
+#     # write jump after sprites 
+#     # +2 for curr inst & need to go 'behind' sprites
+#     romBuffer.append((((addr + totalSpriteBytes + 2) & 0xF00) >> 8)& 0xF| 0x10)
+#     romBuffer.append((addr + totalSpriteBytes + 2) & 0xFF)
+
+#     addr += 2
+#     # We store sprite directly at rom's start
+#     # Now the first sprite index will be his memory addr
+
+#     for i, s in enumerate(sprites):
+#         sprites[i].insert(0, addr)
+#         for y in range(3, len(s)):
+#             romBuffer.append(0xFF & s[y])
+#             addr+=1
+
+#     if doDebug:
+#         print("Sprites : ", sprites)
+#         print([hex(x) for x in romBuffer])
 
 """
     Array containing:
@@ -178,7 +194,7 @@ for i in range(len(srcLines)):
         labelsWithInst[l] = [addr]
         labelCount+=1
 
-if doDebug: sprint(labelsWithInst)
+if doDebug: print(labelsWithInst)
 # Now process instructions and store them :)
 
 
@@ -217,7 +233,7 @@ for l in labelsWithInst:
     for i in range(1, len(labelsWithInst[l])):
         inst: str = labelsWithInst[l][i].lower()
         split = inst.split(' ')
-
+        
         # Here we replace label's name with its addr
         if "jp" in split[0] or "call" in split[0]:
             for tmpLabel in labelsWithInst:
@@ -226,6 +242,7 @@ for l in labelsWithInst:
 
         if split[0] in functionTableCreateBytes:
             byte1, byte2 = functionTableCreateBytes[split[0]](inst, l, hexDel)
+            print("bytes:: ", hex(byte1), hex(byte2))
         
         # Sould not happen
         else:
@@ -233,6 +250,7 @@ for l in labelsWithInst:
             print("Leaving ...")
             break
         
+
         romBuffer.append(byte1 & 0xFF)
         romBuffer.append(byte2 & 0xFF)
         addr += 2       

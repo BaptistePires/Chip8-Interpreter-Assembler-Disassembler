@@ -92,6 +92,7 @@ void chip8::oc00EE(){
 
 void chip8::oc1NNN(){
     if(disassF) {
+        
         disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " JP   $" << std::hex << getNNN(opcode)<< std::endl;
         return;
     }

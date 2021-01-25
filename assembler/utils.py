@@ -138,21 +138,21 @@ def parseInst_LD(instLine: str, label:str, hexDel: str) -> (int, int):
         byte2 = ((d2 & 0xF) << 4)
     # LD vx, bb 6xbb
     elif op1.startswith('v'):
-        d1 = getRegNo(op1)
-        d2 = getIntFromHexStr(op2, hexDel=hexDel)
-        byte1 = 0x60 | (d1 & 0xF)
-        byte2 = 0xFF & d2
+        if op2 == "dt":
+            d1 = getRegNo(op1)
+            byte1 = 0xF0 | (d1 & 0x0F)
+            byte2 = 0x07
+        else:
+            d1 = getRegNo(op1)
+            d2 = getIntFromHexStr(op2, hexDel=hexDel)
+            byte1 = 0x60 | (d1 & 0xF)
+            byte2 = 0xFF & d2
+
     # LD I, bbb
     elif op1 == "i":
         d1 = getIntFromHexStr(op2, hexDel)
         byte1 = 0xA0 | ((0xF00 & d1)>>8)
         byte2 = 0x0FF & d1
-    
-    # LD vx, dt Fx07
-    elif op2 == "dt":
-        d1 = getRegNo(op1)
-        byte1 = 0xF0 | (d1 & 0x0F)
-        byte2 = 0x07
 
     # LD vx, k Fx01
     elif op2 == "k":
@@ -214,7 +214,7 @@ def parseInst_JP(instLine: str, label:str, hexDel: str) -> (int, int):
     if addr > 0xFFF:
         print("You can't jump outside memory : \n\t%s\n\t in label : %s" % (instLine, label))
         exit()
-
+    print(((addr & 0xF00) >> 8) | 0x10, addr & 0x0FF)
     return ((addr & 0xF00) >> 8) | 0x10, addr & 0x0FF
 
 def parseInst_CALL(instLine: str, label:str, hexDel: str) -> (int, int):
@@ -300,7 +300,7 @@ def parseInst_ADD(instLine: str, label:str, hexDel: str) -> (int, int):
     if op1 == "i" and  op2.startswith('v'):
         d1 = 0x00
         d2 = getRegNo(op2)
-        byte1 = 0xF0 | d2
+        byte1 = 0xF0 | (d2 & 0x0F)
         byte2 = 0x1E
     # 8xy4
     elif op1.startswith('v') and op2.startswith('v'):
@@ -311,7 +311,8 @@ def parseInst_ADD(instLine: str, label:str, hexDel: str) -> (int, int):
     # 7xbb
     else:
         d1 = getRegNo(op1)
-        byte1 = 0xF0 | d1
+        d2 = getIntFromHexStr(op2)
+        byte1 = 0x70 | d1
         byte2 = d2 & 0xFF
 
     return byte1, byte2

@@ -50,17 +50,19 @@ void chip8::run() {
     timer_t timerInsts = std::chrono::high_resolution_clock::now();
     int instCount = 0;
     timer_t now;
+    
     while(running) {
 
         handleEvents();
+        
         now = std::chrono::high_resolution_clock::now();
         if(std::chrono::duration_cast<std::chrono::microseconds>(now - lastInstTime).count() < microSecPerInst)continue;
         if(std::chrono::duration_cast<std::chrono::seconds>(now - timerInsts).count() >= 1) {
-            std::cout << "\r Inst. per sec :" << std::dec << std::flush << instCount <<"." << std::flush ;
             timerInsts = now;
             instCount = 0;
         }
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
+        // std::cout << std::hex << (int) opcode << std::endl;
         (this->*opcodeTable[getCode(opcode)])(); 
         instCount++;
         
@@ -74,8 +76,10 @@ void chip8::run() {
         }else{
             SDL_PauseAudio(SDL_TRUE);
         }
-        
+        // std::cout << "\r R3 : " << (int) (registers[3]) << " Inst. per sec :" << std::dec << std::flush << instCount <<"." << std::flush;
         lastInstTime = std::chrono::high_resolution_clock::now();
+
+        
     }
 
 }
@@ -126,7 +130,7 @@ bool chip8::init() {
 }
 
 void chip8::render() {
-    // SDL_RenderClear(rendererWrapper.r);
+    SDL_RenderClear(rendererWrapper.r);
     SDL_UpdateTexture(rendererWrapper.texture, nullptr, &display[0], sizeof(display[0]) * DISPLAY_WIDTH);
     SDL_RenderCopy(rendererWrapper.r, rendererWrapper.texture, nullptr, nullptr);
     SDL_RenderPresent(rendererWrapper.r);
@@ -149,8 +153,9 @@ void chip8::disass() {
         if(opcode == 0x0000) continue;
         
         code = getCode(opcode);
-        std::cout << "opcode : " << std::hex << opcode << std::endl;
-        (this->*opcodeTable[code])();
+        std::cout << "opcode : " << std::hex << (int)opcode << ", code : " << (int) code << std::endl;
+        if(code >=0 && code <= 0xF)
+            (this->*opcodeTable[code])();
         
     }
 
