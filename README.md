@@ -35,6 +35,7 @@ If you want to take a look at the assembler, go [here](./assembler), there are s
 - Fix some opcodes interpreter
 - Improve disass with labels ?
 - Some examples with jumps etc
+- Supervisor with `ncurses` to dump RAM, VRAM-like & registers ?
 
 ## References
 ---
