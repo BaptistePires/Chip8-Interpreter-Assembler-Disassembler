@@ -65,7 +65,8 @@ for i in range(len(srcLines)):
 
     l = srcLines[i].lower()
     
-    if skip[0] == True:
+    # Used to skip sprites line
+    if skip[0]:
         skip[1] = skip[1] - 1
         if skip[1] == 0:
             skip[0] = False
@@ -89,9 +90,17 @@ for i in range(len(srcLines)):
     elif l[0] == '.':
         ## Handle sprite
         if ".sprite" in l:
-            label, name, height, sType = [w.replace(' ', '') for w in l.split(' ')]
+            spriteData = [w.replace(' ', '') for w in l.split(' ')]
 
-            height = int(''.join([char for char in height if char.isnumeric()]))
+            if len(spriteData) != 4:
+                printParseErr("Wrong sprite format line %s" % i,"sprites", l)
+
+            label, name, height, sType = spriteData
+
+            if hexDel in height:
+                height = int(height.replace(hexDel, ''), 16)
+            else:
+                height = int(height)
 
             sprites.append([name, height])
             spriteLst = [srcLines[j].replace('"', '') for j in range(i + 1, i + 1 + height)]
@@ -106,7 +115,7 @@ for i in range(len(srcLines)):
             label = l
             if label.endswith(':'): label = label[:-1]
             if len(label) <= 1:
-                printError(i, "You have to give a name to your label, not", srcLines[i])
+                printError(i, "You have to give a name to your label, not ", srcLines[i])
                 exit()
             labels.append((label, i))
             
@@ -124,16 +133,23 @@ if doDebug:
 
 romBuffer:int = []
 addr: int = memStartAddr
-print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (addr, hexDel))
+print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (hex(addr), hexDel))
 print("Reading user defined sprites...")
 
+"""
+    Here we add a jump at the very begining for the ROM and
+    store sprites right after it. The jump targets the address
+    right after the sprites, were all the other instructions
+    will be stored.
+"""
 if totalSpriteBytes > 0:
     # Ignore jump before
     addr +=2 
-    print(addr)
     for i, s in enumerate(sprites):
-
+        
+        # Sprite start address. Will be used to link sprites names in `LD I, name` instructions.
         sprites[i].insert(0, addr)
+
         for y in range(3, len(s)):
             romBuffer.append(0xFF & s[y])
             addr+=1
@@ -141,34 +157,13 @@ if totalSpriteBytes > 0:
     addrJumpTarget = addr + 2
     if doDebug: print("Jump target behind sprites : ", addrJumpTarget)
     
+    # Write jump
     romBuffer.insert(0, ((addrJumpTarget & 0xF00) >> 8) | 0x10)
     romBuffer.insert(1, addrJumpTarget & 0x0FF)
-    addr += 2
+    
 
-# if totalSpriteBytes > 0:
-#     # We need to check if sprites bytes count is even to keep instuctions addr aligned
-#     if totalSpriteBytes%2 != 0:
-#         romBuffer.append(0x00)
 
-#     # write jump after sprites 
-#     # +2 for curr inst & need to go 'behind' sprites
-#     romBuffer.append((((addr + totalSpriteBytes + 2) & 0xF00) >> 8)& 0xF| 0x10)
-#     romBuffer.append((addr + totalSpriteBytes + 2) & 0xFF)
-
-#     addr += 2
-#     # We store sprite directly at rom's start
-#     # Now the first sprite index will be his memory addr
-
-#     for i, s in enumerate(sprites):
-#         sprites[i].insert(0, addr)
-#         for y in range(3, len(s)):
-#             romBuffer.append(0xFF & s[y])
-#             addr+=1
-
-#     if doDebug:
-#         print("Sprites : ", sprites)
-#         print([hex(x) for x in romBuffer])
-
+print("Parsing labels...")
 """
     Array containing:
         - 0    : label's addr
@@ -198,15 +193,18 @@ for i in range(len(srcLines)):
         labelCount+=1
 
 if doDebug: print(labelsWithInst)
-# Now process instructions and store them :)
 
 
-byte1: int = 0x0
-byte2: int = 0x0
+byte1: int = 0x00
+byte2: int = 0x00
 
-
+print("Assembling...")
 """
-    Function table used to handle all instructions.
+    Function table used to generate the two bytes for each instruction.
+    Each function take 3 arguments : 
+        - Instruction line as string.
+        - Label containing it.
+        - The hexadecimal delimiter used.
 """
 functionTableCreateBytes = {
     "cls": lambda _, __, ___: ((0x0E & 0xFF), (0x00 & 0xFF)),
@@ -231,7 +229,6 @@ functionTableCreateBytes = {
     "ld":  parseInst_LD
 }
 
-print(sprites)
 for l in labelsWithInst:
     for i in range(1, len(labelsWithInst[l])):
         inst: str = labelsWithInst[l][i].lower()
@@ -243,7 +240,7 @@ for l in labelsWithInst:
                 if tmpLabel in inst:
                     inst = inst.replace(tmpLabel, hex(labelsWithInst[tmpLabel][0]).replace('0x', hexDel))
 
-        # Here we replace sprites name by its addr
+        # Here we replace sprite name by its addr
         # Instruction has to be formated this way : ld I, sprite_name
         if "ld i" in inst:
             for s in sprites:
@@ -251,18 +248,9 @@ for l in labelsWithInst:
                 if s[1] == split[2]:
                     split[2] = str(s[0])
                     inst = ' '.join(split)
-                    print("Inserted inst : ", inst)
                     break
         if split[0] in functionTableCreateBytes:
             byte1, byte2 = functionTableCreateBytes[split[0]](inst, l, hexDel)
-            print("bytes:: ", hex(byte1), hex(byte2))
-        
-        # Sould not happen
-        else:
-            print("Unknow instruction : %s" % inst)
-            print("Leaving ...")
-            break
-        
 
         romBuffer.append(byte1 & 0xFF)
         romBuffer.append(byte2 & 0xFF)
@@ -271,6 +259,7 @@ for l in labelsWithInst:
 with open(targetFile, 'w+b') as outFile:
 
     for byte in romBuffer:
+        # Here [byteorder] isn't usefull as we are writing only 1 byte at a time.
         outFile.write(byte.to_bytes(1, byteorder='little', signed=False))
 
 print("Everything went well. You can find assembled file here : %s" % targetFile)
