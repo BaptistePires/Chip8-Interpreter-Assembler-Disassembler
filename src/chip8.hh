@@ -17,6 +17,7 @@
 #include <sstream>
 #include <atomic>
 #include <cmath>
+#include <ncurses.h>
 #include <SDL2/SDL.h>
 
 
@@ -61,6 +62,7 @@ typedef audioWrapper audioWrapper_t;
 
 
 class chip8 {
+    // As it's used by the monitor thread as reading only, avoiding mutexes
     uint8_t registers[COUNT_REG];
     uint8_t soundTimer;
     uint8_t delayTimer;
@@ -79,7 +81,7 @@ class chip8 {
     std::string romPath;
     
     double clockSpeed;
-
+    int termSize[2];
     uint16_t opcode;
     bool debug = true;  
     std::atomic<bool> running, needRender;
@@ -112,9 +114,13 @@ class chip8 {
 
     private:
         bool init();
+        bool initSDL2();
+        bool initNcurses();
+        
         void render();
         void initFunctionsTable();
         void handleEvents();
+        static void ncursesDeamon(chip8& chip);
 
         void tableOc0();
         void oc00E0();

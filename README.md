@@ -3,15 +3,19 @@ This is a personal project. Made it to learn about interpreters & CPUs.
 It only tested on Ubuntu, but it will most likely run on any Debian-based ditribution.
 
 ## Dependencies
-You'll need `SDL2` to run this program. You can install it with :  
-`sudo apt-get install libsdl2-dev`  
+You'll need `SDL2` and `ncurses` to run this program. You can install it with :  
+```sh
+sudo apt-get install libsdl2-dev
+sudo apt-get install libncurses5-dev libncursesw5-dev
+```
+This program was only tested with these libraries version so it runs with any other please let me know!  
 You'll also need to create the folder `./obj` that will be used during compilation.  
 Once you're all set, you can just run `make` in the root directory.
 
 
 ## How to use it
 ___
-First you'll need to compile it. You'll need `make` and `SDL2`.  
+First you'll need to compile it. You'll need `make`, `SDL2` and `ncurses`.  
   
 Currently, you can :  
 - Run a chip8 program, they're located in `./res`. You can also provide your own if you want to. To run a program use : `./chip8Interpreter [path_to_file]`  

@@ -31,6 +31,7 @@ chip8::~chip8(){
     SDL_DestroyRenderer(rendererWrapper.r);
     SDL_DestroyWindow(rendererWrapper.w);
     SDL_Quit();
+    endwin();
     delete[] mem;
     delete[] display;
 
@@ -49,6 +50,8 @@ void chip8::run() {
     timer_t timerInsts = std::chrono::high_resolution_clock::now();
     int instCount = 0;
     timer_t now;
+
+    std::thread t(ncursesDeamon, std::ref(*this));
     
     while(running) {
 
@@ -61,7 +64,7 @@ void chip8::run() {
             instCount = 0;
         }
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
-        std::cout << std::hex << (int) opcode << std::endl;
+        
         (this->*opcodeTable[getCode(opcode)])(); 
         instCount++;
         
@@ -81,10 +84,17 @@ void chip8::run() {
         
     }
 
+    t.join();
+
 }
 
 bool chip8::init() {
 
+    running = initSDL2() && initNcurses(); 
+    return true;
+}
+
+bool chip8::initSDL2() {
     // Init video
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         std::cout << "Error while SDL_Init() :" << SDL_GetError() << std::endl;
@@ -94,6 +104,7 @@ bool chip8::init() {
 
     if (SDL_CreateWindowAndRenderer(DISPLAY_WIDTH * 10, DISPLAY_HEIGHT * 10  , SDL_WINDOW_RESIZABLE |SDL_WINDOW_SHOWN, &rendererWrapper.w, &(rendererWrapper.r)) < 0) {
         std::cout << "Error while creating window and renderer : " << SDL_GetError() << std::endl;
+        return false;
     }
     std::string title = "Chip-8 Interpreter - " + romPath;
     SDL_SetWindowTitle(rendererWrapper.w, title.c_str());
@@ -124,9 +135,17 @@ bool chip8::init() {
     audio.device = SDL_OpenAudioDevice(nullptr, 0, &audio.spec, &audio.spec, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE);
     if(audio.device < 0) {
         std::cout << "Error while opening audio device : " << SDL_GetError();
+        return false;
     }
     SDL_PauseAudio(SDL_FALSE);
-    running = true;
+    return true;
+}
+
+bool chip8::initNcurses() {
+    initscr();
+    raw();
+    noecho();
+    curs_set(0);
     return true;
 }
 
@@ -216,6 +235,36 @@ void chip8::setFontAddr(int fontAddr) {
     for(int i = 0; i < FONT_COUNT; ++i){
         mem[fontStartAddr + i] = chip8_fontset[i];
     }
+}
+
+/**
+ * Calling this function assumes that ncurses was correctly initiated
+ **/
+void chip8::ncursesDeamon(chip8& chip) {
+    WINDOW *regWin, *ramWin;
+    int savedSize[2] = {chip.termSize[0],chip.termSize[1]};
+    int regWinWidth = (float)savedSize[0] * 0.20;
+    regWin = newwin(savedSize[1], regWinWidth, 0, 0);
+    ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
+    while(chip.running) {
+        getmaxyx(stdscr, chip.termSize[1], chip.termSize[0]);
+        if(savedSize[0] != chip.termSize[0] || savedSize[1] != chip.termSize[1]) {
+            savedSize[0] = chip.termSize[0];
+            savedSize[1] = chip.termSize[1];
+            regWinWidth = (float)savedSize[0] * 0.20;
+            regWin = newwin(savedSize[1], regWinWidth, 0, 0);
+            ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
+        }
+        box(regWin, 0, 0);
+        mvwprintw(regWin, 0, 0, "Registers");
+        box(ramWin, 0, 0);
+        mvwprintw(ramWin, 0, 0, "RAM");
+        wrefresh(regWin);
+        wrefresh(ramWin);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    
 }
 
 void chip8::handleEvents() {
