@@ -142,6 +142,7 @@ bool chip8::initSDL2() {
 }
 
 bool chip8::initNcurses() {
+    
     initscr();
     raw();
     noecho();
@@ -246,7 +247,10 @@ void chip8::ncursesDeamon(chip8& chip) {
     int regWinWidth = (float)savedSize[0] * 0.20;
     regWin = newwin(savedSize[1], regWinWidth, 0, 0);
     ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
+    uint16_t line;
+    uint16_t tmpPc;
     while(chip.running) {
+        // Handle resize
         getmaxyx(stdscr, chip.termSize[1], chip.termSize[0]);
         if(savedSize[0] != chip.termSize[0] || savedSize[1] != chip.termSize[1]) {
             savedSize[0] = chip.termSize[0];
@@ -255,13 +259,29 @@ void chip8::ncursesDeamon(chip8& chip) {
             regWin = newwin(savedSize[1], regWinWidth, 0, 0);
             ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
         }
+        // Handle registers
+        wclear(regWin);
         box(regWin, 0, 0);
         mvwprintw(regWin, 0, 0, "Registers");
+        for(line = 1; line < 0xF && line < savedSize[1] - 1; ++line) {
+            mvwprintw(regWin, line, 1, "v%1X  : 0x%2X", line ,  chip.registers[line]);
+        }
+        mvwprintw(regWin, line, 1, "dt  : 0x%2X", chip.delayTimer);line++;
+        mvwprintw(regWin, line, 1, "st  : 0x%2X", chip.soundTimer);line++;
+        line++;
+        mvwprintw(regWin, line, 1, "PC  : 0x%2X", chip.pc);
+        line++;
+        mvwprintw(regWin, line, 1, "SP  : 0x%d", chip.sp);
+        // Handle RAM
         box(ramWin, 0, 0);
         mvwprintw(ramWin, 0, 0, "RAM");
+        ;
+        for(line = 1, tmpPc = chip.pc; line < savedSize[1] - 1; line++, tmpPc+=2) {
+            mvwprintw(ramWin, line, 1, "[$%3X] 0x%4X", tmpPc, (chip.mem[tmpPc] << 8) | (chip.mem[tmpPc + 1]));
+        }
         wrefresh(regWin);
         wrefresh(ramWin);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
     
