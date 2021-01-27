@@ -1,6 +1,6 @@
 # Chip8 Interpreter, Assembler & Disassembler
-This is a personal project. Made it to learn about emulators & CPUs.  
-This was only tested on Ubuntu, but it will most likely run on any Debian-based ditribution.
+This is a personal project. Made it to learn about interpreters & CPUs.  
+It only tested on Ubuntu, but it will most likely run on any Debian-based ditribution.
 
 ## Dependencies
 You'll need `SDL2` to run this program. You can install it with :  
@@ -19,6 +19,7 @@ Currently, you can :
 - Specify the `font` starting location, as I saw that some people assume that it's located at `0x000` and others at `0x050(80)`, you can specify with the `--font [base10 addr]` flag. Currently it doen't support hex address. Will probably be added sometime.
 - You can also disassemble a file with :  
 `./chip8Interpreter -d [path_to_file]`   
+Disassambler won't generate code that you can re-assemble as it can't retrieve sprites data. Will probably modify assembler to add a singature to assembled files so disassembler can export spires too.
 Result will be stored in `disass.asm`. File created can't be compiled, I just use it to understand roms.
 
 # Assembler
@@ -34,6 +35,7 @@ If you want to take a look at the assembler, go [here](./assembler), there are s
 - Fix some opcodes interpreter
 - Improve disass with labels ?
 - Some examples with jumps etc
+- Supervisor with `ncurses` to dump RAM, VRAM-like & registers ?
 
 ## References
 ---
