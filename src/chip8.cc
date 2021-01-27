@@ -1,7 +1,6 @@
 #include "chip8.hh"
 
 
-
 chip8::chip8() {
 
     std::fill(std::begin(keyboard), std::end(keyboard), false);
@@ -62,7 +61,7 @@ void chip8::run() {
             instCount = 0;
         }
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
-        // std::cout << std::hex << (int) opcode << std::endl;
+        std::cout << std::hex << (int) opcode << std::endl;
         (this->*opcodeTable[getCode(opcode)])(); 
         instCount++;
         

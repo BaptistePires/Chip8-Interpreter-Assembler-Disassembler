@@ -8,6 +8,7 @@ from utils import *
 memStartAddr = 0x200
 
 doDebug = '-d' in argv or '--debug' in argv
+doPrint = "--no-print" not in argv
 srcLines: str = []
 targetFile = "a.c8c"
 lenArgv = len(argv)
@@ -15,7 +16,7 @@ lenArgv = len(argv)
 
 # Parse args
 if lenArgv < 2:
-    print("Usage :\n\tpython3 %s filename [-o output]" % argv[0])
+    if doPrint: print("Usage :\n\tpython3 %s filename [-o output]" % argv[0])
     exit()
 elif lenArgv > 2:
 
@@ -34,7 +35,7 @@ try:
             buf = l
             if(buf.replace(' ', '') != '\n'): srcLines.append(l.replace('\n', ''))
 except IOError:
-    print("Error while reading input file %s, can't open." % argv[1])
+    if doPrint: print("Error while reading input file %s, can't open." % argv[1])
     exit()
 
 # Now we parse source file
@@ -59,7 +60,7 @@ labels = []
 
 instructions = []
 
-print("Parsing file...")
+if doPrint: print("Parsing file...")
 skip = [False, 0]
 for i in range(len(srcLines)):
 
@@ -93,7 +94,7 @@ for i in range(len(srcLines)):
             spriteData = [w.replace(' ', '') for w in l.split(' ')]
 
             if len(spriteData) != 4:
-                printParseErr("Wrong sprite format line %s" % i,"sprites", l)
+                if doPrint: printParseErr("Wrong sprite format line %s" % i,"sprites", l)
 
             label, name, height, sType = spriteData
 
@@ -115,7 +116,7 @@ for i in range(len(srcLines)):
             label = l
             if label.endswith(':'): label = label[:-1]
             if len(label) <= 1:
-                printError(i, "You have to give a name to your label, not ", srcLines[i])
+                if doPrint: printError(i, "You have to give a name to your label, not ", srcLines[i])
                 exit()
             labels.append((label, i))
             
@@ -124,7 +125,7 @@ for i in range(len(srcLines)):
 
 totalSpriteBytes = sum([len(s) - 2 for s in sprites])
 
-if doDebug:
+if doDebug and doPrint:
     print("Sprites : ", sprites)
     print("Labels : ",  labels)              
     print("Inst :", instructions)    
@@ -133,8 +134,9 @@ if doDebug:
 
 romBuffer:int = []
 addr: int = memStartAddr
-print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (hex(addr), hexDel))
-print("Reading user defined sprites...")
+if doPrint: 
+    print("Starting with :\n\tMEM_START_ADDR = %s\n\tHEX_DEL = %s" % (hex(addr), hexDel))
+    print("Reading user defined sprites...")
 
 """
     Here we add a jump at the very begining for the ROM and
@@ -155,7 +157,7 @@ if totalSpriteBytes > 0:
             addr+=1
     
     addrJumpTarget = addr + 2
-    if doDebug: print("Jump target behind sprites : ", addrJumpTarget)
+    if doDebug and doPrint: print("Jump target behind sprites : ", addrJumpTarget)
     
     # Write jump
     romBuffer.insert(0, ((addrJumpTarget & 0xF00) >> 8) | 0x10)
@@ -163,7 +165,7 @@ if totalSpriteBytes > 0:
     
 
 
-print("Parsing labels...")
+if doPrint: print("Parsing labels...")
 """
     Array containing:
         - 0    : label's addr
@@ -198,7 +200,7 @@ if doDebug: print(labelsWithInst)
 byte1: int = 0x00
 byte2: int = 0x00
 
-print("Assembling...")
+if doPrint: print("Assembling...")
 """
     Function table used to generate the two bytes for each instruction.
     Each function take 3 arguments : 
@@ -262,4 +264,4 @@ with open(targetFile, 'w+b') as outFile:
         # Here [byteorder] isn't usefull as we are writing only 1 byte at a time.
         outFile.write(byte.to_bytes(1, byteorder='little', signed=False))
 
-print("Everything went well. You can find assembled file here : %s" % targetFile)
+if doPrint: print("Everything went well. You can find assembled file here : %s" % targetFile)
