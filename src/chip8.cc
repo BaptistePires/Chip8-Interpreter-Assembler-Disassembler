@@ -260,7 +260,7 @@ void chip8::ncursesDeamon(chip8& chip) {
             ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
         }
         // Handle registers
-        wclear(regWin);
+        
         box(regWin, 0, 0);
         mvwprintw(regWin, 0, 0, "Registers");
         for(line = 1; line < 0xF && line < savedSize[1] - 1; ++line) {
