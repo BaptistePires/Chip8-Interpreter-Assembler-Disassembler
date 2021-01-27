@@ -21,7 +21,7 @@ const std::string TESTS_FLAG = "--test";
  *  Type of options:
  *      - key   : flag used as std::string
  *      - value : 
- *          - first  : If it's set, if it's in the map it should but who knows
+ *          - first  : If it's set, it's in the map but who knows:)
  *          - second : index of the flag, used to retrieve values
  **/
 typedef std::map<std::string, std::pair<bool, int>> opts_t;
