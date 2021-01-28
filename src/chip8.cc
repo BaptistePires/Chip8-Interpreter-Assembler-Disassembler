@@ -1,7 +1,28 @@
 #include "chip8.hh"
 
 
-chip8::chip8() {
+chip8::chip8() : instructionTable{
+                    {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOc0},
+                    {"JP $%03.3X", instruction_t::type_t::ADDR, &chip8::oc1NNN},
+                    {"CALL $%03.3X", instruction_t::type_t::ADDR, &chip8::oc2NNN},
+                    {"SE V%01.1X, $%02.2X", instruction_t::type_t::REG_BYTE, &chip8::oc3XKK},
+                    {"SNE V%01.1X, $%02.2X", instruction_t::type_t::REG_BYTE, &chip8::oc4XKK},
+                    {"SE V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc5XY0},
+                    {"LD V%01.1X,  $%02.2X", instruction_t::type_t::REG_BYTE, &chip8::oc6XKK},
+                    {"ADD V%01.1X,  $%02.2X", instruction_t::type_t::REG_REG, &chip8::oc7XKK},
+                    {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOc8},
+                    {"SNE V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc9XY0},
+                    {"LD I, $%03.3X", instruction_t::type_t::ADDR, &chip8::ocANNN},
+                    {"JP V0, $%03.3X", instruction_t::type_t::ADDR, &chip8::ocBNNN},
+                    {"RND V%01.1X, $%02.2X", instruction_t::type_t::REG_BYTE, &chip8::ocCXKK},
+                    {"DRW V%01.1X, V%01X, $%01.1X", instruction_t::type_t::REG_REG_NIBBLE, &chip8::ocDXYN},
+                    {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOcE},
+                    {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOcF}},
+                    instructionTable0(0x10, {"NOP", instruction::type_t::NOP, &chip8::nop}),
+                    instructionTable8(0x10, {"NOP", instruction::type_t::NOP, &chip8::nop}),
+                    instructionTableE(0x10, {"NOP", instruction::type_t::NOP, &chip8::nop}),
+                    instructionTableF(0x100, {"NOP", instruction::type_t::NOP, &chip8::nop})
+{
 
     std::fill(std::begin(keyboard), std::end(keyboard), false);
 
@@ -20,13 +41,15 @@ chip8::chip8() {
     for(int i = 0; i < FONT_COUNT; ++i){
         mem[fontStartAddr + i] = chip8_fontset[i];
     }
+    halt = false;
     
     initFunctionsTable();
+    monitor = nullptr;
 }
 
 chip8::~chip8(){
 
-        
+    if(monitor != nullptr) delete monitor;
     SDL_DestroyTexture(rendererWrapper.texture);
     SDL_DestroyRenderer(rendererWrapper.r);
     SDL_DestroyWindow(rendererWrapper.w);
@@ -51,7 +74,7 @@ void chip8::run() {
     int instCount = 0;
     timer_t now;
 
-    std::thread t(ncursesDeamon, std::ref(*this));
+    std::thread t(&chipMonitor::render, monitor);
     
     while(running) {
 
@@ -64,10 +87,9 @@ void chip8::run() {
             instCount = 0;
         }
         opcode = (mem[pc] << 8u) | mem[pc + 1]; pc+=2;
-        
-        (this->*opcodeTable[getCode(opcode)])(); 
+
+        (this->*instructionTable[getCode(opcode)].func)(); 
         instCount++;
-        
 
         if(delayTimer>0) delayTimer--;
 
@@ -90,8 +112,16 @@ void chip8::run() {
 
 bool chip8::init() {
 
-    running = initSDL2() && initNcurses(); 
-    return true;
+    
+
+    if(initNcurses()) {
+        monitor = new chipMonitor(this);
+    }else{
+        std::cout << "Can't run monitor. Please check that you have the requiered ncurses version installed.(see README.md)" << std::endl; 
+    }
+    running = initSDL2();
+
+    return running;
 }
 
 bool chip8::initSDL2() {
@@ -146,7 +176,17 @@ bool chip8::initNcurses() {
     initscr();
     raw();
     noecho();
+    wtimeout(stdscr, -1);
+    cbreak();
+    nodelay(stdscr, TRUE);
     curs_set(0);
+    if(has_colors() == FALSE) {
+        endwin();
+        std::cout << "Your terminal doesn't support colors." << std::endl;
+        return false;
+    }
+    start_color();
+    init_pair(1, COLOR_BLACK, COLOR_WHITE);
     return true;
 }
 
@@ -176,7 +216,7 @@ void chip8::disass() {
         code = getCode(opcode);
         std::cout << "opcode : " << std::hex << (int)opcode << ", code : " << (int) code << std::endl;
         if(code >=0 && code <= 0xF)
-            (this->*opcodeTable[code])();
+            (this->*instructionTable[code].func)();
         
     }
 
@@ -239,52 +279,176 @@ void chip8::setFontAddr(int fontAddr) {
 }
 
 /**
- * Calling this function assumes that ncurses was correctly initiated
+ * Calling this function assumes that ncurses was correctly initiated.
+ * Need to clean this code i can't even push it or i won't ever get a job lol:)
+ * This is temporary obvs don't judge me pls
  **/
-void chip8::ncursesDeamon(chip8& chip) {
-    WINDOW *regWin, *ramWin;
-    int savedSize[2] = {chip.termSize[0],chip.termSize[1]};
-    int regWinWidth = (float)savedSize[0] * 0.20;
-    regWin = newwin(savedSize[1], regWinWidth, 0, 0);
-    ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
-    uint16_t line;
-    uint16_t tmpPc;
-    while(chip.running) {
-        // Handle resize
-        getmaxyx(stdscr, chip.termSize[1], chip.termSize[0]);
-        if(savedSize[0] != chip.termSize[0] || savedSize[1] != chip.termSize[1]) {
-            savedSize[0] = chip.termSize[0];
-            savedSize[1] = chip.termSize[1];
-            regWinWidth = (float)savedSize[0] * 0.20;
-            regWin = newwin(savedSize[1], regWinWidth, 0, 0);
-            ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
-        }
-        // Handle registers
-        
-        box(regWin, 0, 0);
-        mvwprintw(regWin, 0, 0, "Registers");
-        for(line = 1; line < 0xF && line < savedSize[1] - 1; ++line) {
-            mvwprintw(regWin, line, 1, "v%1X  : 0x%2X", line ,  chip.registers[line]);
-        }
-        mvwprintw(regWin, line, 1, "dt  : 0x%2X", chip.delayTimer);line++;
-        mvwprintw(regWin, line, 1, "st  : 0x%2X", chip.soundTimer);line++;
-        line++;
-        mvwprintw(regWin, line, 1, "PC  : 0x%2X", chip.pc);
-        line++;
-        mvwprintw(regWin, line, 1, "SP  : 0x%d", chip.sp);
-        // Handle RAM
-        box(ramWin, 0, 0);
-        mvwprintw(ramWin, 0, 0, "RAM");
-        ;
-        for(line = 1, tmpPc = chip.pc; line < savedSize[1] - 1; line++, tmpPc+=2) {
-            mvwprintw(ramWin, line, 1, "[$%3X] 0x%4X", tmpPc, (chip.mem[tmpPc] << 8) | (chip.mem[tmpPc + 1]));
-        }
-        wrefresh(regWin);
-        wrefresh(ramWin);
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    }
+// void chip8::ncursesDeamon(chip8& chip) {
+//     WINDOW *regWin, *ramWin;
+//     int savedSize[2] = {chip.termSize[0],chip.termSize[1]};
+//     int regWinWidth = (float)savedSize[0] * 0.20;
+//     regWin = newwin(savedSize[1], regWinWidth, 0, 0);
+//     ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
+//     uint16_t line;
+//     uint16_t tmpPc, buffPc;
+//     std::stringstream ss;
+//     uint16_t currOpcode;
+//     uint8_t currCode;
+//     instruction_t inst;
+//     char currMemo[100];
+//     char currPcTxt[6];
+//     bool indirection = false;
+//     int offset;
+//     bool halt(false);
 
-    
+//     int ch;
+//     while(chip.running) { 
+
+
+//         do {
+//             // Press Enter to halt 
+//             if(wgetch(stdscr) == 10) halt = !halt;
+//             std::this_thread::yield();
+//         }while(halt && chip.running);
+               
+
+//         // Handle resize
+//         if(savedSize[0] != chip.termSize[0] || savedSize[1] != chip.termSize[1]) {
+//             savedSize[0] = chip.termSize[0];
+//             savedSize[1] = chip.termSize[1];
+//             regWinWidth = (float)savedSize[0] * 0.20;
+//             regWin = newwin(savedSize[1], regWinWidth, 0, 0);
+//             ramWin = newwin(savedSize[1], (float)savedSize[0] * 0.80, 0, regWinWidth + 1);
+//         }
+//         // Handle registers
+        
+//         box(regWin, 0, 0);
+//         mvwprintw(regWin, 0, 0, "Registers");
+//         for(line = 1; line < 0xF && line < savedSize[1] - 1; ++line) {
+            
+//             mvwprintw(regWin, line, 1, "v%1X  : 0x%2X", line ,  chip.registers[line]);
+//         }
+//         mvwprintw(regWin, line, 1, "dt  : 0x%2X", chip.delayTimer);line++;
+//         mvwprintw(regWin, line, 1, "st  : 0x%2X", chip.soundTimer);line++;
+//         line++;
+//         mvwprintw(regWin, line, 1, "PC  : 0x%2X", chip.pc);
+//         line++;
+//         mvwprintw(regWin, line, 1, "SP  : 0x%d", chip.sp);
+
+        
+//         // Handle RAM
+//         box(ramWin, 0, 0);
+//         mvwprintw(ramWin, 0, 0, "RAM");
+//         buffPc = chip.pc;
+//         offset = savedSize[1] / 2;
+//         if(buffPc%2==0) offset = offset%2==0 ? offset : offset - 1;
+//         else  offset = offset%2==0 ? offset - 1: offset ;
+
+//         for(line = 1, tmpPc = buffPc - offset ; line < savedSize[1] - 1; line++, tmpPc+=2) {
+            
+            
+//             currOpcode =(chip.mem[tmpPc] << 8) | (chip.mem[tmpPc + 1]);
+//             currCode = getCode(currOpcode);
+//             inst = chip.instructionTable[currCode];
+//             do {
+//                 indirection = false;
+//                 switch(inst.type) {
+//                     case instruction_t::NOP:
+//                         sprintf(currMemo, inst.memonic.c_str());
+//                         break;
+                    
+//                     case instruction_t::REG:
+//                         sprintf(currMemo, inst.memonic.c_str(), getX(chip.opcode));
+//                         break;
+                    
+//                     case instruction_t::REG_REG:
+//                         sprintf(currMemo, inst.memonic.c_str(), getX(chip.opcode), getY(chip.opcode));
+//                         break;
+
+//                     case instruction_t::REG_BYTE:
+//                         sprintf(currMemo, inst.memonic.c_str(), getX(chip.opcode), getKK(chip.opcode));
+//                         break;
+                    
+//                     case instruction_t::REG_REG_NIBBLE:
+//                         sprintf(currMemo, inst.memonic.c_str(), getX(chip.opcode), getY(chip.opcode), getN(chip.opcode));
+//                         break;
+
+//                     case instruction_t::ADDR:
+//                         sprintf(currMemo, inst.memonic.c_str(), getNNN(chip.opcode));
+//                         break;
+
+//                     case instruction_t::NO_ARG:
+//                         sprintf(currMemo, inst.memonic.c_str());
+//                         break;
+                    
+//                     // Handle indirection
+//                     case instruction_t::JP_TABLE:
+//                         indirection = true;
+//                         // std::cout << currCode << std::endl;
+//                         switch(currCode) {
+//                             case 0x0:
+//                                 inst = chip.instructionTable0[getN(chip.opcode)];
+//                                 break;
+
+//                             case 0x8:
+//                                 inst = chip.instructionTable8[getN(chip.opcode)];
+//                                 break;
+                            
+//                             case 0xE:
+//                                 inst = chip.instructionTableE[getN(chip.opcode)];
+//                                 break;
+
+//                             case 0xF:
+//                                 inst = chip.instructionTableF[getKK(chip.opcode)];
+//                                 break;
+
+//                             default:
+//                                 indirection = false;
+//                         }
+//                 }
+//             } while(indirection);
+            
+            
+
+//             if(tmpPc == buffPc) {
+//                 // std::this_thread::sleep_for(std::chrono::seconds(1));
+//                 wattron(ramWin, COLOR_PAIR(1));
+//                 mvwprintw(ramWin, line, 1, "[$%03.3X] - ", tmpPc);
+//                 mvwprintw(ramWin, line, 10, currMemo, tmpPc, currOpcode);
+//                 wattroff(ramWin, COLOR_PAIR(1));
+//             }else {
+//                 mvwprintw(ramWin, line, 10, currMemo, tmpPc, currOpcode);
+//             }
+            
+//         }
+//         wrefresh(regWin);
+//         wrefresh(ramWin);
+//         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+//     }
+
+//     delwin(regWin);
+//     delwin(ramWin);    
+// }
+
+
+uint8_t* chip8::getRegisters() {
+    return registers;
+}
+
+std::atomic<bool>* chip8::getRunning() {
+    return &running;
+}
+
+void chip8::setRunning(bool state) {
+    running = state;
+}
+
+std::atomic<bool>*  chip8::getHalt() {
+    return &halt;
+}
+
+void chip8::setHalt(bool state) {
+    halt = state;
 }
 
 void chip8::handleEvents() {

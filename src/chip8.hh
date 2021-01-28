@@ -12,13 +12,15 @@
 #include <mutex>
 #include <atomic>
 #include <chrono>
-#include <bitset>
 #include <cstdlib>
 #include <sstream>
 #include <atomic>
 #include <cmath>
 #include <ncurses.h>
+#include <sstream>
 #include <SDL2/SDL.h>
+
+#include "chipMonitor.hh"
 
 
 #define W_BG_PAIR 1
@@ -37,6 +39,9 @@
 
 #define INST_PER_SEC 100
 
+// Used to print instructions
+
+
 #define getNNN(opcode) (opcode & 0x0FFF)
 #define getKK(opcode) (opcode & 0x00FF)
 #define getX(opcode) ((opcode & 0x0F00) >> 8u)
@@ -44,6 +49,11 @@
 #define getN(opcode) (opcode & 0x000F)
 #define getCode(opcode) ((opcode & 0xF000) >> 12u)
 
+
+
+
+class chipMonitor;
+struct instruction;
 
 struct rendererWrapper {
     SDL_Window *w;
@@ -59,9 +69,13 @@ struct audioWrapper {
 
 typedef rendererWrapper rendererWrapper_t;
 typedef audioWrapper audioWrapper_t;
-
+typedef instruction instruction_t;
 
 class chip8 {
+
+
+    chipMonitor *monitor;
+    
     // As it's used by the monitor thread as reading only, avoiding mutexes
     uint8_t registers[COUNT_REG];
     uint8_t soundTimer;
@@ -84,7 +98,7 @@ class chip8 {
     int termSize[2];
     uint16_t opcode;
     bool debug = true;  
-    std::atomic<bool> running, needRender;
+    std::atomic<bool> running, needRender, halt;
     
 
     // Used to disass
@@ -100,6 +114,12 @@ class chip8 {
     void (chip8::*ocTableE[0xE + 1])();
     void (chip8::*ocTableF[0x65 + 1])();
 
+    std::vector<instruction_t> instructionTable;
+    std::vector<instruction_t> instructionTable0;
+    std::vector<instruction_t> instructionTable8;
+    std::vector<instruction_t> instructionTableE;
+    std::vector<instruction_t> instructionTableF;
+
     std::vector<uint8_t> opcodesF = {0x07, 0x0A, 0x15, 0x18, 0x1E, 0x20, 0x33, 0x55, 0x65};
 
     public:
@@ -112,7 +132,13 @@ class chip8 {
         void setClock(double clock);
         void setFontAddr(int fontAddr);
 
-    private:
+        uint8_t* getRegisters();
+        std::atomic<bool>* getRunning();
+        void setRunning(bool state);
+        std::atomic<bool>* getHalt();
+        void setHalt(bool state);
+
+    public:
         bool init();
         bool initSDL2();
         bool initNcurses();
@@ -166,6 +192,8 @@ class chip8 {
         void ocFX55();
         void ocFX65();
 
+        void nop();
+
     private:
         // Took it from http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
         uint8_t chip8_fontset[FONT_COUNT] = { 
@@ -188,5 +216,21 @@ class chip8 {
         };
         
 };
+
+struct instruction {
+
+    enum type_t {
+        NO_ARG,
+        ADDR,
+        REG,
+        REG_REG,
+        REG_BYTE,
+        REG_REG_NIBBLE,
+        JP_TABLE,
+        NOP
+    }; std::string memonic;
+    type_t type;
+    void (chip8::*func) ();
+}; 
 
 #endif

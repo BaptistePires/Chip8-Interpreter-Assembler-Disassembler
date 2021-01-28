@@ -2,75 +2,57 @@
 
 
 void chip8::initFunctionsTable() {
-    opcodeTable[0] = &chip8::tableOc0;
-    ocTable0[0] = &chip8::oc00E0;
-    ocTable0[0xE] = &chip8::oc00EE;
+    instructionTable0[0x0] = {"CLS", instruction_t::type_t::NO_ARG, &chip8::oc00E0};
+    instructionTable0[0xE] = {"RET", instruction::type_t::NO_ARG, &chip8::oc00EE};
 
-    opcodeTable[0x1] = &chip8::oc1NNN;
-    opcodeTable[0x2] = &chip8::oc2NNN;
-    opcodeTable[0x3] = &chip8::oc3XKK;
-    opcodeTable[0x4] = &chip8::oc4XKK;
-    opcodeTable[0x5] = &chip8::oc5XY0;
-    opcodeTable[0x6] = &chip8::oc6XKK;
-    opcodeTable[0x7] = &chip8::oc7XKK;
+    instructionTable8[0x0] = {"LD V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY0};
+    instructionTable8[0x1] = {"OR V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY1};
+    instructionTable8[0x2] = {"AND V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY2};
+    instructionTable8[0x3] = {"XOR V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY3};
+    instructionTable8[0x4] = {"ADD V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY4};
+    instructionTable8[0x5] = {"SUB V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY5};
+    instructionTable8[0x6] = {"SHR V%01.1X, V%01.1X}", instruction_t::type_t::REG_REG, &chip8::oc8XY6};
+    instructionTable8[0x7] = {"SUBN V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc8XY7};
+    instructionTable8[0xE] = {"SHL V%01.1X, V%01.1X}", instruction_t::type_t::REG_REG, &chip8::oc8XYE};
 
-    opcodeTable[0x8] = &chip8::tableOc8;
-    ocTable8[0x0] = &chip8::oc8XY0;
-    ocTable8[0x1] = &chip8::oc8XY1;
-    ocTable8[0x2] = &chip8::oc8XY2;
-    ocTable8[0x3] = &chip8::oc8XY3;
-    ocTable8[0x4] = &chip8::oc8XY4;
-    ocTable8[0x5] = &chip8::oc8XY5;
-    ocTable8[0x6] = &chip8::oc8XY6;
-    ocTable8[0x7] = &chip8::oc8XY7;
-    ocTable8[0xE] = &chip8::oc8XY7;
+    instructionTableE[0x1] = {"SKNP V%01.1X", instruction_t::type_t::REG, &chip8::ocEXA1};
+    instructionTableE[0xE] = {"SKP V%01.1X", instruction_t::type_t::REG, &chip8::ocEX9E};
 
-    opcodeTable[0x9] = &chip8::oc9XY0;
-    opcodeTable[0xA] = &chip8::ocANNN;
-    opcodeTable[0xB] = &chip8::ocBNNN;
-    opcodeTable[0xC] = &chip8::ocCXKK;
-    opcodeTable[0xD] = &chip8::ocDXYN;
-
-    opcodeTable[0xE] = &chip8::tableOcE;
-    ocTableE[0x1] = &chip8::ocEXA1;
-    ocTableE[0xE] = &chip8::ocEX9E;
-
-    opcodeTable[0xF] = &chip8::tableOcF;
-    ocTableF[0x7] = &chip8::ocFX07;
-    ocTableF[0xA] = &chip8::ocFX07;
-    ocTableF[0x15] = &chip8::ocFX07;
-    ocTableF[0x18] = &chip8::ocFX07;
-    ocTableF[0x1E] = &chip8::ocFX07;
-    ocTableF[0x29] = &chip8::ocFX07;
-    ocTableF[0x33] = &chip8::ocFX07;
-    ocTableF[0x55] = &chip8::ocFX07;
-    ocTableF[0x65] = &chip8::ocFX07;
-
+    instructionTableF[0x07] = {"LD V%01.1X, DT", instruction_t::type_t::REG, &chip8::ocFX07};
+    instructionTableF[0x0A] = {"LD V%01.1X, K", instruction_t::type_t::REG, &chip8::ocFX0A};
+    instructionTableF[0x15] = {"LD DT, V%01.1X", instruction_t::type_t::REG, &chip8::ocFX15};
+    instructionTableF[0x18] = {"LD ST, V%01.1X", instruction_t::type_t::REG, &chip8::ocFX18};
+    instructionTableF[0x1E] = {"ADD I, V%01.1X", instruction_t::type_t::REG, &chip8::ocFX1E};
+    instructionTableF[0x29] = {"LD F, V%01.1X", instruction_t::type_t::REG, &chip8::ocFX29};
+    instructionTableF[0x33] = {"LD B, V%01.1X", instruction_t::type_t::REG, &chip8::ocFX33};
+    instructionTableF[0x55] = {"LD [I], V%01.1X", instruction_t::type_t::REG, &chip8::ocFX55};
+    instructionTableF[0x65] = {"LD V%01.1X, [I]", instruction_t::type_t::REG, &chip8::ocFX65};
+    
 }
 
 void chip8::tableOc0() {
     uint8_t n = getN(opcode);
-    if(n == 0 || n == 0xE)
-        (this->*ocTable0[n])();
+        if(n == 0 || n == 0xE)
+            (this->*instructionTable0[getN(opcode)].func)();
 }
 
 void chip8::tableOc8() {
     uint8_t n = getN(opcode);
     if((n >= 0 && n <= 7) || n == 0xE)
-        (this->*ocTable8[n])();
+        (this->*instructionTable8[getN(opcode)].func)();
 }
 
 void chip8::tableOcE() {
     uint8_t n = getN(opcode);
     if(n == 0xE || n == 0x1)
-        (this->*ocTableE[n])();
+        (this->*instructionTableE[getN(opcode)].func)();
 }
 
 void chip8::tableOcF() {
     uint8_t kk = getKK(opcode);
     for(const uint8_t& fCode: opcodesF)
         if(fCode == kk)
-            (this->*ocTableF[kk])();
+            (this->*instructionTableF[getKK(opcode)].func)();
 }
 
 
@@ -371,9 +353,8 @@ void chip8::ocFX18(){
 void chip8::ocFX1E(){
     if(disassF) {
         disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " ADD  I, V" << std::hex << getX(opcode)<< std::endl;
-        return;
+        return; 
     }
-    I += registers[getX(opcode)];
 }
 
 void chip8::ocFX29(){
@@ -396,6 +377,7 @@ void chip8::ocFX33(){
 }
 
 void chip8::ocFX55(){
+    std::cout << "fx55" << std::endl;
     if(disassF) {
         disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD  [I], V" << std::hex << getX(opcode)<< std::endl;
         return;
@@ -414,4 +396,7 @@ void chip8::ocFX65(){
     for(int i = 0; i <= getX(opcode); ++i ) {
         registers[i] = mem[I + i];
     }
+}
+
+void chip8::nop(){ 
 }
