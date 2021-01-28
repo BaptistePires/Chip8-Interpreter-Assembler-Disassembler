@@ -12,10 +12,10 @@ chip8::chip8() : instructionTable{
                     {"ADD V%01.1X,  $%02.2X", instruction_t::type_t::REG_REG, &chip8::oc7XKK},
                     {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOc8},
                     {"SNE V%01.1X, V%01.1X", instruction_t::type_t::REG_REG, &chip8::oc9XY0},
-                    {"LD I, $%03.3X", instruction_t::type_t::ADDR, &chip8::ocANNN},
+                    {"LD I, $%02.2X", instruction_t::type_t::ADDR, &chip8::ocANNN},
                     {"JP V0, $%03.3X", instruction_t::type_t::ADDR, &chip8::ocBNNN},
                     {"RND V%01.1X, $%02.2X", instruction_t::type_t::REG_BYTE, &chip8::ocCXKK},
-                    {"DRW V%01.1X, V%01X, $%01.1X", instruction_t::type_t::REG_REG_NIBBLE, &chip8::ocDXYN},
+                    {"DRW V%01.1X, V%01.1X, $%01.1X", instruction_t::type_t::REG_REG_NIBBLE, &chip8::ocDXYN},
                     {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOcE},
                     {"NOP", instruction_t::type_t::JP_TABLE, &chip8::tableOcF}},
                     instructionTable0(0x10, {"NOP", instruction::type_t::NOP, &chip8::nop}),
@@ -44,7 +44,7 @@ chip8::chip8() : instructionTable{
     halt = false;
     
     initFunctionsTable();
-    monitor = nullptr;
+    if(isMonitoring)monitor = nullptr;
 }
 
 chip8::~chip8(){
@@ -73,8 +73,9 @@ void chip8::run() {
     timer_t timerInsts = std::chrono::high_resolution_clock::now();
     int instCount = 0;
     timer_t now;
-
-    std::thread t(&chipMonitor::render, monitor);
+    std::thread* t;
+    if(isMonitoring) t = new std::thread(&chipMonitor::render, monitor);
+    
     
     while(running) {
 
@@ -104,8 +105,8 @@ void chip8::run() {
         // std::cout << "\r R3 : " << (int) (registers[3]) << " Inst. per sec :" << std::dec << std::flush << instCount <<"." << std::flush;
         lastInstTime = std::chrono::high_resolution_clock::now();
     }
-
-    t.join();
+    
+    if(isMonitoring)t->join();
 
 }
 
@@ -113,11 +114,14 @@ bool chip8::init() {
 
     
 
-    if(initNcurses()) {
-        monitor = new chipMonitor(this);
-    }else{
-        std::cout << "Can't run monitor. Please check that you have the requiered ncurses version installed.(see README.md)" << std::endl; 
+    if(isMonitoring){
+        if(initNcurses()) {
+            monitor = new chipMonitor(this);
+        }else{
+            std::cout << "Can't run monitor. Please check that you have the requiered ncurses version installed.(see README.md)" << std::endl; 
+        }
     }
+
     running = initSDL2();
 
     return running;
@@ -278,27 +282,27 @@ void chip8::setFontAddr(int fontAddr) {
 }
 
 
-instruction_t chip8::getInstruction(uint16_t opcode) {
+instruction_t* chip8::getInstruction(uint16_t opcode) {
     uint8_t code = getCode(opcode);
-    instruction_t i = instructionTable[code];
+    instruction_t* i = &instructionTable[code];
 
     // Handle indirection
-    if(i.type == instruction_t::type_t::JP_TABLE) {
+    if(i->type == instruction_t::type_t::JP_TABLE) {
             switch(code) {
                 case 0x0:
-                    i = instructionTable0[getN(opcode)];
+                    i = &instructionTable0[getN(opcode)];
                     break;
                 
                 case 0x8:
-                    i = instructionTable8[getN(opcode)];
+                    i = &instructionTable8[getN(opcode)];
                     break;
 
                 case 0xE:
-                    i = instructionTableE[getN(opcode)];
+                    i = &instructionTableE[getN(opcode)];
                     break;
 
                 case 0xF:
-                    i = instructionTable0[getN(opcode)];
+                    i = &instructionTable0[getKK(opcode)];
                     break;
             }
     }
@@ -346,6 +350,14 @@ uint8_t chip8::getSP() {
 
 std::atomic<bool>* chip8::getKeyboard() {
     return keyboard;
+}
+
+uint16_t chip8::getI() {
+    return I;
+}
+
+void chip8::setMonitoring(bool f) {
+    isMonitoring = f;
 }
 
 void chip8::handleEvents() {
@@ -411,6 +423,10 @@ void chip8::handleEvents() {
                 break;
             case SDLK_f:
                 keyboard[0xF] = true;
+                break;
+
+            case SDLK_SPACE:
+                halt = !halt;
                 break;
         }
         break;

@@ -42,7 +42,7 @@
 #define MEM_START 0x200
 #define PC_START 0x200
 #define FONT_COUNT 80
-#define FONT_START_ADDR 0x000
+#define FONT_START_ADDR 0x50
 
 #define INST_PER_SEC 100
 
@@ -95,7 +95,8 @@ class chip8 {
     uint8_t *mem;
     uint16_t stack[STACK_SIZE];
     std::atomic<bool> keyboard[0xF];
-    // Probably will use a bitset next don't know yet if it's worth, it's a """small""" array anyway
+
+    
     uint32_t *display;
     rendererWrapper_t rendererWrapper;
     audioWrapper_t audio;
@@ -105,8 +106,10 @@ class chip8 {
     int termSize[2];
     uint16_t opcode;
     bool debug = true;  
+
     std::atomic<bool> running, needRender, halt;
-    
+
+    bool isMonitoring = true;    
 
     // Used to disass
     bool disassF;
@@ -139,6 +142,8 @@ class chip8 {
         void setClock(double clock);
         void setFontAddr(int fontAddr);
 
+
+        // Getters & setters
         uint8_t* getRegisters();
         std::atomic<bool>* getRunning();
         void setRunning(bool state);
@@ -149,9 +154,11 @@ class chip8 {
         uint8_t getDT();
         uint8_t getST();
         uint8_t getSP();
+        uint16_t getI();
         std::atomic<bool>* getKeyboard();
+        void setMonitoring(bool f);
 
-        instruction_t getInstruction(uint16_t opcode);
+        instruction_t* getInstruction(uint16_t opcode);
 
     public:
         bool init();

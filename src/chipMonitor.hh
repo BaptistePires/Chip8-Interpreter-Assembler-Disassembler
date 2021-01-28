@@ -4,10 +4,11 @@
 #include "chip8.hh"
 
 const int TERM_MIN_WIDTH = 120;
-const int TERM_MIN_HEIGHT = 20;
+const int TERM_MIN_HEIGHT = 30;
 const int REG_WIN_SIZE = 27;
-const int RAM_WIN_SIZE = 30;
-const int KEYBOARD_WIN_SIZE = 50;
+const int RAM_WIN_SIZE = 40;
+const int KEYBOARD_WIN_SIZE = 21;
+const int KEYBOARD_WIN_HEIGHT = 13;
 
 
 

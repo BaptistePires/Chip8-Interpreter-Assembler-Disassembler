@@ -16,6 +16,7 @@ const std::string DISASS_FLAG = "-d";
 const std::string CLOCK_FLAG = "-c";
 const std::string FONT_ADDR_FLAG = "--font";
 const std::string TESTS_FLAG = "--test";
+const std::string NO_MONITOR_FLAG = "--no-monitor";
 
 /**
  *  Type of options:
@@ -54,6 +55,10 @@ int main(int argc, char** argv) {
         if(!c.loadFile(argv[opt.second + 1])) return 0;
         c.disass();
     }else{
+
+        if(isOptSet(opts, NO_MONITOR_FLAG)) {
+            c.setMonitoring(false);
+        }
 
         if(isOptSet(opts, CLOCK_FLAG)) {
 

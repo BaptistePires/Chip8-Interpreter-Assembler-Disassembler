@@ -18,14 +18,20 @@ chipMonitor::~chipMonitor() {
 // 
 void chipMonitor::render(){
     std::atomic<bool> *running = chip->getRunning(), *halt = chip->getHalt();
-
+    std::string commands("space: halt, esc: quit");
+    int ch;
     while(*running) {
         resize();
         do {
-            if(wgetch(stdscr) == 10){
+            ch = wgetch(stdscr);
+            
+            if(ch == ' '){
                 *halt = !(*halt);
                 std::this_thread::yield();
                 continue;
+            }else if(ch == 27){ 
+                *running = false; 
+                return;
             }
 
         }while((*halt) && (*running));
@@ -35,10 +41,11 @@ void chipMonitor::render(){
         renderRam();
         renderKeyboard();
 
-        
+        mvwprintw(stdscr, lastRecordedSize[1] - 1, lastRecordedSize[0] - commands.size(), "space: halt, esc: quit");
         wrefresh(winRegisters);
         wrefresh(winRam);
         wrefresh(winKeybr);
+        wrefresh(stdscr);
         
     }
 }
@@ -65,46 +72,46 @@ void chipMonitor::renderRam() {
     else offset =  offset%2 == 0 ? offset - 1 : offset;
 
     uint16_t opcode;
-    instruction_t currInst;
+    instruction_t* currInst;
 
-    // 100 overkill, will compute max size soon:)
-    char currMemo[20];
+
+    char currMemo[255];
 
     // Using 16 bits but are there any 255+ lines term?
     // Long but if I set tmpPc outside I have a warning, sorry
     for(uint16_t line = 2, tmpPc = std::max<uint16_t>(pc - offset, 0x200); (line < lastRecordedSize[1]-2) && tmpPc < 0xFFF; ++line, tmpPc+=2) {
         memset(currMemo, 0, 20);
         opcode =((*ram)[tmpPc] << 8) | ((*ram)[tmpPc + 1]);
-        
 
         currInst = chip->getInstruction(opcode);
 
         // Format line based on instruction type
-        switch(currInst.type) {
+        switch(currInst->type) {
 
             case instruction_t::REG:
-                sprintf(currMemo, currInst.mnemonic.c_str(), getX(opcode));
+                sprintf(currMemo, currInst->mnemonic.c_str(), getX(opcode));
                 break;
             
             case instruction_t::REG_REG:
-                sprintf(currMemo, currInst.mnemonic.c_str(), getX(opcode), getY(opcode));
+                sprintf(currMemo, currInst->mnemonic.c_str(), getX(opcode), getY(opcode));
                 break;
 
             case instruction_t::REG_BYTE:
-                sprintf(currMemo, currInst.mnemonic.c_str(), getX(opcode), getKK(opcode));
+                sprintf(currMemo, currInst->mnemonic.c_str(), getX(opcode), getKK(opcode));
                 break;
             
             case instruction_t::REG_REG_NIBBLE:
-                sprintf(currMemo, currInst.mnemonic.c_str(), getX(opcode), getY(opcode), getN(opcode));
+                sprintf(currMemo, currInst->mnemonic.c_str(), getX(opcode), getY(opcode), getN(opcode));
                 break;
 
             case instruction_t::ADDR:
-                sprintf(currMemo, currInst.mnemonic.c_str(), getNNN(opcode));
+                sprintf(currMemo, currInst->mnemonic.c_str(), getNNN(opcode));
                 break;
 
             case instruction_t::NOP:
             case instruction_t::NO_ARG:
-                memcpy(currMemo, currInst.mnemonic.c_str(), currInst.mnemonic.size());
+                memcpy(currMemo, currInst->mnemonic.c_str(), currInst->mnemonic.size());
+                
                 break;
 
             // Can't happen if chip->getInstruction(opcode) correctly called.
@@ -116,12 +123,12 @@ void chipMonitor::renderRam() {
         // Duplicating lines but isn't it more efficient than 2 if ???
         if(tmpPc == pc) {
             wattron(winRam, COLOR_PAIR(W_BG_PAIR));
-            mvwprintw(winRam, line, 2, ">[$%03.3X] - ", tmpPc);
-            mvwprintw(winRam, line, 11, currMemo, tmpPc, opcode);
+            mvwprintw(winRam, line, 2, ">[$%03.3X] $%04.4X - ", tmpPc, opcode);
+            mvwprintw(winRam, line, 18, currMemo, tmpPc, opcode);
             wattroff(winRam, COLOR_PAIR(1));
         } else{
-            mvwprintw(winRam, line, 2, "[$%03.3X] - ", tmpPc);
-            mvwprintw(winRam, line, 11, currMemo, tmpPc, opcode);
+            mvwprintw(winRam, line, 2, "[$%03.3X] $%04.4X - ", tmpPc, opcode);
+            mvwprintw(winRam, line, 17, currMemo, tmpPc);
         }
     }
     
@@ -146,7 +153,13 @@ void chipMonitor::renderRegisters() {
     }
     
     line++;
-
+    if(col == 2){
+        col +=12;
+        line = 2;
+    } 
+    mvwprintw(winRegisters, line++, col, "PC : 0x%02.2X", chip->getPc());
+    mvwprintw(winRegisters, line++, col, "I  : 0x%02.2X", chip->getI());
+    line++;
     mvwprintw(winRegisters, line++, col, "DT : 0x%02.2X", chip->getDT());
     mvwprintw(winRegisters, line++, col, "ST : 0x%02.2X", chip->getST());
     mvwprintw(winRegisters, line++, col, "SP : 0x%02.2X", chip->getSP());
@@ -170,7 +183,7 @@ void chipMonitor::renderKeyboard() {
 
     uint8_t line = 2;
     uint8_t col = 2;
-    mvwprintw(winKeybr, line++, col, "+---------------+");
+    mvwprintw(winKeybr, line++, col, "+---+---+---+---+");
     mvwprintw(winKeybr, line, col++, "|");
 
     SET_ATTR_IF_KEY(0x1);
@@ -182,7 +195,7 @@ void chipMonitor::renderKeyboard() {
     SET_ATTR_IF_KEY(0xC);
     waddch(winKeybr, '|');
 
-    mvwprintw(winKeybr, ++line, (col=2), "+---------------+");
+    mvwprintw(winKeybr, ++line, (col=2), "+---+---+---+---+");
     
     mvwprintw(winKeybr, ++line, col++, "|");
 
@@ -195,7 +208,7 @@ void chipMonitor::renderKeyboard() {
     SET_ATTR_IF_KEY(0xD);
     mvwprintw(winKeybr, line, col++, "|");
 
-    mvwprintw(winKeybr, ++line, (col=2), "+---------------+");
+    mvwprintw(winKeybr, ++line, (col=2), "+---+---+---+---+");
     
     mvwprintw(winKeybr, ++line, col++, "|");
 
@@ -208,7 +221,7 @@ void chipMonitor::renderKeyboard() {
     SET_ATTR_IF_KEY(0xE);
     mvwprintw(winKeybr, line, col++, "|");
 
-    mvwprintw(winKeybr, ++line, (col=2), "+---------------+");
+    mvwprintw(winKeybr, ++line, (col=2), "+---+---+---+---+");
     
     mvwprintw(winKeybr, ++line, col++, "|");
 
@@ -221,7 +234,7 @@ void chipMonitor::renderKeyboard() {
     SET_ATTR_IF_KEY(0xF);
     mvwprintw(winKeybr, line, col++, "|");
 
-    mvwprintw(winKeybr, ++line, (col=2), "+---------------+");
+    mvwprintw(winKeybr, ++line, (col=2), "+---+---+---+---+");
     
     #undef SET_ATTR_IF_KEY
 }
@@ -253,7 +266,7 @@ bool chipMonitor::createWindows() {
         return false;
     }
 
-    if((winKeybr = newwin(lastRecordedSize[1], KEYBOARD_WIN_SIZE, 0, REG_WIN_SIZE + RAM_WIN_SIZE + 1)) == NULL) {
+    if((winKeybr = newwin(KEYBOARD_WIN_HEIGHT, KEYBOARD_WIN_SIZE, 0, REG_WIN_SIZE + RAM_WIN_SIZE + 1)) == NULL) {
         std::cout << "Error while creating window with ncurses." << std::endl;
         delwin(winRegisters);
         delwin(winRam);

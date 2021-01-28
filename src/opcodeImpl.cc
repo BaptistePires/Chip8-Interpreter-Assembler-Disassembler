@@ -377,11 +377,11 @@ void chip8::ocFX33(){
 }
 
 void chip8::ocFX55(){
-    std::cout << "fx55" << std::endl;
     if(disassF) {
         disassFile << "[$" << std::hex << (pc & 0xFFF) << "]"  << " LD  [I], V" << std::hex << getX(opcode)<< std::endl;
         return;
     }
+
     for(int i = 0; i < getX(opcode) + 1; ++i ) {
         mem[I + i] = registers[i];
     }
