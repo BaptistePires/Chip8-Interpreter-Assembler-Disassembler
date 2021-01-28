@@ -4,7 +4,7 @@
 
 # Compiler settings - Can be customized.
 CC = g++
-CXXFLAGS = -std=c++1y -Wall -g -O3
+CXXFLAGS = -std=c++1y -Wall -g -O0
 LDFLAGS = -lpthread -lSDL2 -lncurses
 
 # Makefile settings - Can be customized.

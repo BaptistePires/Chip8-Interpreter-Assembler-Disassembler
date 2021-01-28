@@ -22,6 +22,13 @@
 
 #include "chipMonitor.hh"
 
+/***
+ * REALLY NEED TO REPLACE DEFINES BY CONST  
+ * 
+ * 
+ * 
+ * 
+ **************/
 
 #define W_BG_PAIR 1
 #define B_BG_PAIR 2
@@ -137,6 +144,10 @@ class chip8 {
         void setRunning(bool state);
         std::atomic<bool>* getHalt();
         void setHalt(bool state);
+        uint8_t** getRam();
+        uint16_t getPc();
+
+        instruction_t getInstruction(uint16_t opcode);
 
     public:
         bool init();
@@ -228,7 +239,7 @@ struct instruction {
         REG_REG_NIBBLE,
         JP_TABLE,
         NOP
-    }; std::string memonic;
+    }; std::string mnemonic;
     type_t type;
     void (chip8::*func) ();
 }; 
