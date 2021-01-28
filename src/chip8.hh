@@ -146,6 +146,10 @@ class chip8 {
         void setHalt(bool state);
         uint8_t** getRam();
         uint16_t getPc();
+        uint8_t getDT();
+        uint8_t getST();
+        uint8_t getSP();
+        std::atomic<bool>* getKeyboard();
 
         instruction_t getInstruction(uint16_t opcode);
 

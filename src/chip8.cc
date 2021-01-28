@@ -79,7 +79,7 @@ void chip8::run() {
     while(running) {
 
         handleEvents();
-        
+        if(halt) continue;
         now = std::chrono::high_resolution_clock::now();
         if(std::chrono::duration_cast<std::chrono::microseconds>(now - lastInstTime).count() < microSecPerInst)continue;
         if(std::chrono::duration_cast<std::chrono::seconds>(now - timerInsts).count() >= 1) {
@@ -94,6 +94,7 @@ void chip8::run() {
         if(delayTimer>0) delayTimer--;
 
         // Not really working, need to figure why
+        // SDL_PauseAudio(SDL_FALSE);
         if(soundTimer>0){
             soundTimer--;
             SDL_PauseAudio(SDL_FALSE);
@@ -102,8 +103,6 @@ void chip8::run() {
         }
         // std::cout << "\r R3 : " << (int) (registers[3]) << " Inst. per sec :" << std::dec << std::flush << instCount <<"." << std::flush;
         lastInstTime = std::chrono::high_resolution_clock::now();
-
-        
     }
 
     t.join();
@@ -283,6 +282,7 @@ instruction_t chip8::getInstruction(uint16_t opcode) {
     uint8_t code = getCode(opcode);
     instruction_t i = instructionTable[code];
 
+    // Handle indirection
     if(i.type == instruction_t::type_t::JP_TABLE) {
             switch(code) {
                 case 0x0:
@@ -331,6 +331,21 @@ uint8_t** chip8::getRam() {
 
 uint16_t chip8::getPc() {
     return pc;
+}
+
+uint8_t chip8::getDT() {
+    return delayTimer;
+}
+
+uint8_t chip8::getST() {
+    return soundTimer;
+}
+uint8_t chip8::getSP() {
+    return sp;
+}
+
+std::atomic<bool>* chip8::getKeyboard() {
+    return keyboard;
 }
 
 void chip8::handleEvents() {
