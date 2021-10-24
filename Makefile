@@ -4,7 +4,7 @@
 
 # Compiler settings - Can be customized.
 CC = g++
-CXXFLAGS = -std=c++1y -Wall -g -O0
+CXXFLAGS = -std=c++1y -Wall -g -O0 -Wwrite-strings
 LDFLAGS = -lpthread -lSDL2 -lncurses
 
 # Makefile settings - Can be customized.
@@ -43,9 +43,11 @@ $(APPNAME): $(OBJ)
 -include $(DEP)
 
 # Building rule for .o files and its .c/.cpp in combination with all .h
-$(OBJDIR)/%.o: $(SRCDIR)/%$(EXT)
+$(OBJDIR)/%.o: $(SRCDIR)/%$(EXT) $(OBJDIR)
 	$(CC) $(CXXFLAGS) -o $@ -c $<
 
+$(OBJDIR):
+	mkdir $(OBJDIR)
 ################### Cleaning rules for Unix-based OS ###################
 # Cleans complete project
 .PHONY: clean

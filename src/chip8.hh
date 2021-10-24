@@ -105,7 +105,8 @@ class chip8 {
     double clockSpeed;
     int termSize[2];
     uint16_t opcode;
-    bool debug = true;  
+    bool debug = true;
+    bool isDisass = false;
 
     std::atomic<bool> running, needRender, halt;
 

@@ -50,11 +50,16 @@ chip8::chip8() : instructionTable{
 chip8::~chip8(){
 
     if(monitor != nullptr) delete monitor;
-    SDL_DestroyTexture(rendererWrapper.texture);
-    SDL_DestroyRenderer(rendererWrapper.r);
-    SDL_DestroyWindow(rendererWrapper.w);
-    SDL_Quit();
-    endwin();
+    
+    // If we're just disassembling, SDL2 nor ncures were init
+    if(!isDisass) {
+        SDL_DestroyTexture(rendererWrapper.texture);
+        SDL_DestroyRenderer(rendererWrapper.r);
+        SDL_DestroyWindow(rendererWrapper.w);
+        SDL_Quit();
+        endwin();
+    }
+    
     delete[] mem;
     delete[] display;
 
@@ -201,16 +206,16 @@ void chip8::render() {
 }
 
 void chip8::disass() {
+    isDisass = true;
     disassFile = std::ofstream("./disass.asm",  std::ios::binary);
     disassFile << std::uppercase;
     if(!disassFile.is_open()) {
-        std::cout << "Error while creating file : ./disass.asm" << std::endl;
+        std::cerr << "Error while creating file : ./disass.asm" << std::endl;
         return;
     }
     disassF = true;
 
     uint8_t code;
-    std::cout << std::endl;
     for(pc = PC_START; pc < MEM_SIZE; pc+=2) {
         
         opcode = (mem[pc] << 8u) | mem[pc + 1];

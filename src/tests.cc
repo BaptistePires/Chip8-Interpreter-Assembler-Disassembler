@@ -42,10 +42,10 @@ void tests::testAssembler() {
         }
     }
 
-    TestAssemblerFilesWrapper_t* filesContent = tests::loadTestAssemblerFiles(cmdAssemble[4], "res/tests/test_1_correct.c8c");    
+    TestAssemblerFilesWrapper_t* filesContent = tests::loadTestAssemblerFiles(cmdAssemble[4], std::string{"res/tests/test_1_correct.c8c"}.c_str());
     uint8_t *byte1 = &filesContent->correctFileBinContent[0];
     uint8_t *byte2 = &filesContent->assembledFileBinContent[0];
-    for( byte1, byte2; byte1 != NULL && byte2 != NULL; byte1++, byte2++) {
+    for(; byte1 != NULL && byte2 != NULL; byte1++, byte2++) {
         if(*byte1 != *byte2){
             std::cout << "hi" << std::endl;
         }

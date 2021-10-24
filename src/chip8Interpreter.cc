@@ -82,7 +82,6 @@ int main(int argc, char** argv) {
     }
 
     
-
 }
 
 opts_t setUpOpts(int optsCount, char**& args) {
