@@ -148,7 +148,7 @@ bool chip8::initSDL2() {
     SDL_SetWindowTitle(rendererWrapper.w, title.c_str());
 
     rendererWrapper.texture = SDL_CreateTexture(rendererWrapper.r, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, DISPLAY_WIDTH , DISPLAY_HEIGHT );
-    if(rendererWrapper.texture < 0) {
+    if(!rendererWrapper.texture) {
         std::cout << "Error while creating texture" << std::endl;
         return false;
     }
